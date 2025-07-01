@@ -130,24 +130,23 @@
                 shadowSize: [41, 41]
             });
 
-			L.geoJSON(data, {
-				onEachFeature: function (feature, layer) {
-                    let isRestricted = false;
-                    if (feature.properties && feature.properties.D) {
-                        const now = new Date();
-                        const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-                        if (isRestrictedInNext24Hours(feature.properties.D, now, in24Hours)) {
-                            isRestricted = true;
-                        }
-                        layer.bindPopup(feature.properties.D);
-                    }
+			data.forEach(function(item) {
+				const lat = item[0];
+				const lng = item[1];
+				const description = item[2];
 
-                    if (isRestricted) {
-                        layer.setIcon(redIcon);
-                        restrictedLayer.addLayer(layer);
-                    } else {
-                        otherLayer.addLayer(layer);
-                    }
+				const now = new Date();
+				const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+				let isRestricted = isRestrictedInNext24Hours(description, now, in24Hours);
+
+				var marker = L.marker([lat, lng]);
+				marker.bindPopup(description);
+
+				if (isRestricted) {
+					marker.setIcon(redIcon);
+					restrictedLayer.addLayer(marker);
+				} else {
+					otherLayer.addLayer(marker);
 				}
 			});
 
