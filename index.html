@@ -68,9 +68,17 @@
             const startDate = new Date(currentYear, startMonth, startMonthDay);
             const endDate = new Date(currentYear, endMonth, endMonthDay);
 
-            if (now >= startDate && now <= endDate && now.getDay() === restrictionDay) {
-                let restrictionStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute);
-                let restrictionEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute);
+            // Check if the restriction is active based on the date range (e.g., 1 AVRIL AU 1 DEC)
+            if (now >= startDate && now <= endDate) {
+                // Find the next occurrence of the restriction day
+                const today = now.getDay();
+                const daysUntilRestriction = (restrictionDay - today + 7) % 7;
+                
+                const nextRestrictionDate = new Date(now);
+                nextRestrictionDate.setDate(now.getDate() + daysUntilRestriction);
+
+                let restrictionStart = new Date(nextRestrictionDate.getFullYear(), nextRestrictionDate.getMonth(), nextRestrictionDate.getDate(), startHour, startMinute);
+                let restrictionEnd = new Date(nextRestrictionDate.getFullYear(), nextRestrictionDate.getMonth(), nextRestrictionDate.getDate(), endHour, endMinute);
 
                 if (restrictionStart < in24Hours && restrictionEnd > now) {
                     return true;
@@ -113,37 +121,33 @@
 	fetch('assets/signalisation_stationnement_light.json')
 		.then(response => response.json())
 		.then(data => {
-			var geoJsonLayer = L.geoJSON(data, {
-                pointToLayer: function (feature, latlng) {
-                    var redIcon = L.icon({
-                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                        iconSize: [25, 41],
-                        iconAnchor: [12, 41],
-                        popupAnchor: [1, -34],
-                        shadowSize: [41, 41]
-                    });
+            var redIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
 
-                    let icon = new L.Icon.Default();
+			L.geoJSON(data, {
+				onEachFeature: function (feature, layer) {
                     let isRestricted = false;
                     if (feature.properties && feature.properties.D) {
                         const now = new Date();
                         const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
                         if (isRestrictedInNext24Hours(feature.properties.D, now, in24Hours)) {
-                            icon = redIcon;
                             isRestricted = true;
                         }
                     }
-                    const marker = L.marker(latlng, { icon: icon });
+
                     if (isRestricted) {
-                        marker.addTo(restrictedLayer);
+                        layer.setIcon(redIcon);
+                        restrictedLayer.addLayer(layer);
                     } else {
-                        marker.addTo(otherLayer);
+                        otherLayer.addLayer(layer);
                     }
-                    return marker;
-                },
-				onEachFeature: function (feature, layer) {
-					// You can add popups or other interactions here
+
 					if (feature.properties) {
                         var popupContent = '';
                         for (var k in feature.properties) {
@@ -157,22 +161,23 @@
             markers.addLayer(restrictedLayer);
             markers.addLayer(otherLayer);
 			map.addLayer(markers);
-            map.removeLayer(otherLayer);
+            markers.removeLayer(otherLayer);
 		});
 
     var filterControl = L.control({ position: 'topleft' });
     filterControl.onAdd = function(map) {
         var div = L.DomUtil.create('div', 'leaflet-control');
-        div.innerHTML = '<div id="filter-control"><input type="checkbox" id="show-all" /> <label for="show-all">Afficher tout</label></div>';
+        div.innerHTML = '<div id="filter-control"><input type="checkbox" id="filter-checkbox" checked> <label for="filter-checkbox">Masquer la signalisation de plus de 24h</label></div>';
+        L.DomEvent.on(div, 'click dblclick', L.DomEvent.stopPropagation);
         return div;
     };
     filterControl.addTo(map);
 
-    document.getElementById('show-all').addEventListener('change', function() {
+    document.getElementById('filter-checkbox').addEventListener('change', function() {
         if (this.checked) {
-            map.addLayer(otherLayer);
+            markers.removeLayer(otherLayer);
         } else {
-            map.removeLayer(otherLayer);
+            markers.addLayer(otherLayer);
         }
     });
 </script>
