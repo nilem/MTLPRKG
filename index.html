@@ -139,6 +139,7 @@
                         if (isRestrictedInNext24Hours(feature.properties.D, now, in24Hours)) {
                             isRestricted = true;
                         }
+                        layer.bindPopup(feature.properties.D);
                     }
 
                     if (isRestricted) {
@@ -147,14 +148,6 @@
                     } else {
                         otherLayer.addLayer(layer);
                     }
-
-					if (feature.properties) {
-                        var popupContent = '';
-                        for (var k in feature.properties) {
-                            popupContent += k + ': ' + feature.properties[k] + '<br />';
-                        }
-						layer.bindPopup(popupContent);
-					}
 				}
 			});
 

@@ -5,15 +5,12 @@ properties_to_remove = [
     "POTEAU_ID_POT", "PANNEAU_ID_PAN", "PANNEAU_ID_RPA", "TOPONYME_PAN",
     "DESCRIPTION_CAT", "POTEAU_VERSION_POT", "DATE_CONCEPTION_POT",
     "PAS_SUR_RUE", "DESCRIPTION_RTP", "X", "Y", "NOM_ARROND",
-    "Longitude", "Latitude", "DESCRIPTION_REP"
+    "Longitude", "Latitude", "DESCRIPTION_REP", "POSITION_POP", "CODE_RPA", "FLECHE_PAN"
 ]
 
 # Properties to rename
 properties_to_rename = {
-    "POSITION_POP": "P",
-    "DESCRIPTION_RPA": "D",
-    "CODE_RPA": "C",
-    "FLECHE_PAN": "F"
+    "DESCRIPTION_RPA": "D"
 }
 
 # Read the original GeoJSON file
