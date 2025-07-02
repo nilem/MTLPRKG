@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Generated Email</title>
+</head>
+<body>
+    <h1>Coller le contenu JSON ici</h1>
+    <textarea id="json-input" rows="20" cols="100" style="width: 90%;"></textarea>
+    <br>
+    <button id="generate-btn">Générer</button>
+    
+    <h2>Résultat formaté</h2>
+    <pre id="email-content"></pre>
+
+    <script>
+        document.getElementById('generate-btn').addEventListener('click', function() {
+            const jsonInput = document.getElementById('json-input').value;
+            const emailContent = document.getElementById('email-content');
+            try {
+                const parsedData = JSON.parse(jsonInput);
+                const emailText = generateEmailFromData(parsedData);
+                emailContent.textContent = emailText;
+            } catch (error) {
+                emailContent.textContent = 'Erreur de parsing JSON: ' + error.message;
+            }
+        });
+
+        function generateEmailFromData(data) {
+            if (!data || !Array.isArray(data)) {
+                return "Données invalides";
+            }
+
+            const now = new Date();
+            // Adjust for Montreal timezone (EDT = UTC-4)
+            const montrealOffset = 4 * 60 * 60 * 1000;
+            const startOfDayUTC = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).getTime() + montrealOffset;
+            const endOfDayUTC = startOfDayUTC + (24 * 60 * 60 * 1000) - 1;
+
+            const tripsToday = data.filter(item => {
+                if (!item.invoice || !item.invoice.paymentDate) {
+                    return false;
+                }
+                const paymentDate = new Date(item.invoice.paymentDate).getTime();
+                return paymentDate >= startOfDayUTC && paymentDate <= endOfDayUTC;
+            });
+
+            if (tripsToday.length === 0) {
+                return "Aucun trajet pour aujourd'hui.";
+            }
+
+            const weekdays = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+            const todayDate = new Date();
+            const tomorrowDate = new Date();
+            tomorrowDate.setDate(todayDate.getDate() + 1);
+            const todayDay = weekdays[todayDate.getDay()];
+            const tomorrowDay = weekdays[tomorrowDate.getDay()];
+
+            const carCount = tripsToday.length;
+            const subject = `Sujet : ${carCount} voitures déplacées dans Verdun`;
+
+            let body = `Bonjour,\n\n`;
+            body += `J'ai déplacé les ${carCount} voitures suivantes, ce ${todayDay} soir, tous situés dans des zones interdites de stationnement le ${tomorrowDay} entre 8h et 12h30\n`;
+
+            tripsToday.forEach(trip => {
+                const plate = trip.vehiclePlate || 'N/A';
+                const creditCardCost = trip.invoice.grossRemainingToBePaid ? parseFloat(trip.invoice.grossRemainingToBePaid).toFixed(2) : '0.00';
+                const systemCreditCost = trip.invoice.amountPayWithSystemCredit ? parseFloat(trip.invoice.amountPayWithSystemCredit).toFixed(2) : '0.00';
+                body += `* ${plate}. Coût du trajet : ${systemCreditCost}$ en crédit + ${creditCardCost}$ sur carte de crédit.\n`;
+            });
+
+            body += `\nTous les véhicules ont été déplacés dans de zone à partir du [À COMPLÉTER PAR UTILISATEUR].\n\n`;
+            body += `Cordialement`;
+
+            return `${subject}\n\n${body}`;
+        }
+    </script>
+</body>
+</html>
