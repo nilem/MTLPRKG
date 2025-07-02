@@ -15,6 +15,13 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+        #location-control {
+            background: white;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
 	</style>
 </head>
 <body>
@@ -28,6 +35,25 @@
 		maxZoom: 19,
 		attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 	}).addTo(map);
+
+	var locationMarker, locationCircle;
+
+	map.on('locationfound', function(e) {
+		if (locationMarker) {
+			map.removeLayer(locationMarker);
+		}
+		if (locationCircle) {
+			map.removeLayer(locationCircle);
+		}
+		locationMarker = L.marker(e.latlng).addTo(map).bindPopup("Vous êtes ici !");
+		locationCircle = L.circle(e.latlng, e.accuracy).addTo(map);
+	});
+
+	map.on('locationerror', function(e) {
+		alert(e.message);
+	});
+
+	map.locate({setView: true, maxZoom: 16, watch: true});
 
 	var markers = L.markerClusterGroup();
     var restrictedLayer = L.layerGroup();
@@ -164,6 +190,18 @@
         return div;
     };
     filterControl.addTo(map);
+
+    var locationControl = L.control({ position: 'topleft' });
+    locationControl.onAdd = function(map) {
+        var div = L.DomUtil.create('div', 'leaflet-control');
+        div.innerHTML = '<div id="location-control">Ma position</div>';
+        L.DomEvent.on(div, 'click dblclick', L.DomEvent.stopPropagation);
+        L.DomEvent.on(div, 'click', function () {
+            map.locate({setView: true, maxZoom: 16});
+        });
+        return div;
+    };
+    locationControl.addTo(map);
 
     document.getElementById('filter-checkbox').addEventListener('change', function() {
         if (this.checked) {
