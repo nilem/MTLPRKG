@@ -38,12 +38,14 @@
             const endOfDayUTC = startOfDayUTC + (24 * 60 * 60 * 1000) - 1;
 
             const tripsToday = data.filter(item => {
-                if (!item.invoice || !item.invoice.paymentDate) {
+                if (!item.trip.tripStartDate) {
                     return false;
                 }
-                const paymentDate = new Date(item.invoice.paymentDate).getTime();
-                return paymentDate >= startOfDayUTC && paymentDate <= endOfDayUTC;
+                const tripDate = new Date(item.trip.tripStartDate).getTime();
+                return tripDate >= startOfDayUTC && tripDate <= endOfDayUTC;
             });
+
+            tripsToday.sort((a, b) => new Date(a.trip.tripStartDate) - new Date(b.trip.tripStartDate));
 
             if (tripsToday.length === 0) {
                 return "Aucun trajet pour aujourd'hui.";
@@ -62,12 +64,17 @@
             let body = `Bonjour,\n\n`;
             body += `J'ai déplacé les ${carCount} voitures suivantes, ce ${todayDay} soir, tous situés dans des zones interdites de stationnement le ${tomorrowDay} entre 8h et 12h30\n`;
 
+            let totalSystemCredit = 0;
+
             tripsToday.forEach(trip => {
-                const plate = trip.vehiclePlate || 'N/A';
-                const creditCardCost = trip.invoice.grossRemainingToBePaid ? parseFloat(trip.invoice.grossRemainingToBePaid).toFixed(2) : '0.00';
-                const systemCreditCost = trip.invoice.amountPayWithSystemCredit ? parseFloat(trip.invoice.amountPayWithSystemCredit).toFixed(2) : '0.00';
-                body += `* ${plate}. Coût du trajet : ${systemCreditCost}$ en crédit + ${creditCardCost}$ sur carte de crédit.\n`;
+                const plate = trip.vehiculePlate || 'N/A';
+                const creditCardCost = trip.grossRemainingToBePaid ? parseFloat(trip.grossRemainingToBePaid).toFixed(2) : '0.00';
+                const systemCreditCost = trip.withoutTaxAmountForTripSystemCredit ? parseFloat(trip.withoutTaxAmountForTripSystemCredit) : 0;
+                totalSystemCredit += systemCreditCost;
+                body += `* ${plate}. Coût du trajet : ${systemCreditCost.toFixed(2)}$ en crédit + ${creditCardCost}$ sur carte de crédit.\n`;
             });
+
+            body += `\nTotal des crédits utilisés : ${totalSystemCredit.toFixed(2)}$\n`;
 
             body += `\nTous les véhicules ont été déplacés dans de zone à partir du [À COMPLÉTER PAR UTILISATEUR].\n\n`;
             body += `Cordialement`;
