@@ -11,7 +11,7 @@
     <button id="generate-btn">Générer</button>
     
     <h2>Résultat formaté</h2>
-    <pre id="email-content"></pre>
+    <textarea id="email-content" rows="20" cols="100" style="width: 90%;"></textarea>
 
     <script>
         document.getElementById('generate-btn').addEventListener('click', function() {
@@ -20,9 +20,9 @@
             try {
                 const parsedData = JSON.parse(jsonInput);
                 const emailText = generateEmailFromData(parsedData);
-                emailContent.textContent = emailText;
+                emailContent.value = emailText;
             } catch (error) {
-                emailContent.textContent = 'Erreur de parsing JSON: ' + error.message;
+                emailContent.value = 'Erreur de parsing JSON: ' + error.message;
             }
         });
 
@@ -31,18 +31,15 @@
                 return "Données invalides";
             }
 
-            const now = new Date();
-            // Adjust for Montreal timezone (EDT = UTC-4)
-            const montrealOffset = 4 * 60 * 60 * 1000;
-            const startOfDayUTC = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).getTime() + montrealOffset;
-            const endOfDayUTC = startOfDayUTC + (24 * 60 * 60 * 1000) - 1;
+            const twelveHoursAgo = new Date();
+            twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
 
             const tripsToday = data.filter(item => {
-                if (!item.trip.tripStartDate) {
+                if (!item.trip || !item.trip.tripStartDate) {
                     return false;
                 }
-                const tripDate = new Date(item.trip.tripStartDate).getTime();
-                return tripDate >= startOfDayUTC && tripDate <= endOfDayUTC;
+                const tripDate = new Date(item.trip.tripStartDate);
+                return tripDate >= twelveHoursAgo;
             });
 
             tripsToday.sort((a, b) => new Date(a.trip.tripStartDate) - new Date(b.trip.tripStartDate));
@@ -52,10 +49,9 @@
             }
 
             const weekdays = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-            const todayDate = new Date();
             const tomorrowDate = new Date();
-            tomorrowDate.setDate(todayDate.getDate() + 1);
-            const todayDay = weekdays[todayDate.getDay()];
+            const todayDay = weekdays[tomorrowDate.getDay()];
+            tomorrowDate.setDate(tomorrowDate.getDate() + 1);
             const tomorrowDay = weekdays[tomorrowDate.getDay()];
 
             const carCount = tripsToday.length;
