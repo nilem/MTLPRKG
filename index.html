@@ -60,7 +60,7 @@
 		alert(e.message);
 	});
 
-	map.locate({setView: true, maxZoom: 16, watch: true});
+	map.locate({setView: false, maxZoom: 16, watch: true});
 
 	var markers = L.markerClusterGroup();
     var restrictedLayer = L.layerGroup();
