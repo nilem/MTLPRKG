@@ -1,9 +1,9 @@
 const config = {
-    identityBaseUrl: 'https://java-us01.vulog.com/auth/realms/BCAA-CAYVR/protocol/openid-connect/token',
-    anonymousClientId: 'BCAA-CAYVR_anon',
-    anonymousClientSecret: 'dbe490f4-2f4a-4bef-8c0b-52c0ecedb6c8',
+    identityBaseUrl: 'https://aima-us.vulog.net/auth/realms/LEO-CAMTR/protocol/openid-connect/token',
+    anonymousClientId: 'LEO-CAMTR_anon',
+    anonymousClientSecret: '8600ffa0-2304-46fb-8017-d5da7d0fa4f9',
     anonymousBaseUrl: 'https://aima-us.vulog.net/apiv5',
-    anonymousApiKey: 'f52e5e56-c7db-4af0-acf5-0d8b13ac4bfc',
+    anonymousApiKey: '18aed9af-ba0f-41de-b4b8-a65aa7fe9c14',
     userAgent: 'MonApp/1.0'
 };
 
