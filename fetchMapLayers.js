@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 const config = {
     identityBaseUrl: 'https://java-us01.vulog.com/auth/realms/BCAA-CAYVR/protocol/openid-connect/token',
     anonymousClientId: 'BCAA-CAYVR_anon',
@@ -71,3 +69,5 @@ async function getMappingLayers() {
         console.error("Erreur lors de la récupération des données de '/mapping/layers' :", error.response ? error.response.data : error.message);
     }
 }
+
+export { getMappingLayers };
