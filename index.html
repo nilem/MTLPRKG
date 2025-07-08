@@ -161,7 +161,7 @@
     }
 
     let allVehicles = [];
-    let allRestrictedSpots = [];
+    let allParkingSpots = [];
 
     const promiseVehicles = getAvailableVehicules().then(vehicules => {
         allVehicles = vehicules || [];
@@ -171,15 +171,8 @@
     const promiseParking = fetch('assets/signalisation_stationnement_light.json')
         .then(response => response.json())
         .then(data => {
-            const now = new Date();
-            const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-            data.forEach(function(item) {
-                const description = item[2];
-                if (isRestrictedInNext24Hours(description, now, in24Hours)) {
-                    allRestrictedSpots.push({ lat: item[0], lng: item[1], description: description });
-                }
-            });
-            return data;
+            allParkingSpots = data.map(item => ({ lat: item[0], lng: item[1], description: item[2] }));
+            return allParkingSpots;
         });
 
     Promise.all([promiseVehicles, promiseParking]).then(() => {
@@ -209,24 +202,30 @@
             shadowSize: [41, 41]
         });
 
+        const filter24h = document.getElementById('filter-checkbox').checked;
         const proximityFilter = document.getElementById('proximity-filter-checkbox').checked;
 
         const DISTANCE_TO_PARKING = 100;
 
         let vehiclesToDisplay = allVehicles;
-        let restrictedSpotsToDisplay = allRestrictedSpots;
+        let spotsToDisplay = allParkingSpots;
+        
+        const now = new Date();
+        const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
         if (proximityFilter) {
-            const vehicleLatLngs = allVehicles.map(v => L.latLng(v.location.position.lat, v.location.position.lon));
-            const restrictedLatLngs = allRestrictedSpots.map(s => L.latLng(s.lat, s.lng));
+            const restrictedSpots = allParkingSpots.filter(spot => isRestrictedInNext24Hours(spot.description, now, in24Hours));
+            const restrictedSpotLatLngs = restrictedSpots.map(s => L.latLng(s.lat, s.lng));
 
-            vehiclesToDisplay = allVehicles.filter((v, i) => {
-                const vehicleLatLng = vehicleLatLngs[i];
-                return restrictedLatLngs.some(spotLatLng => vehicleLatLng.distanceTo(spotLatLng) < DISTANCE_TO_PARKING);
+            vehiclesToDisplay = allVehicles.filter(v => {
+                const vehicleLatLng = L.latLng(v.location.position.lat, v.location.position.lon);
+                return restrictedSpotLatLngs.some(spotLatLng => vehicleLatLng.distanceTo(spotLatLng) < DISTANCE_TO_PARKING);
             });
 
-            restrictedSpotsToDisplay = allRestrictedSpots.filter((spot, i) => {
-                const spotLatLng = restrictedLatLngs[i];
+            const vehicleLatLngs = vehiclesToDisplay.map(v => L.latLng(v.location.position.lat, v.location.position.lon));
+
+            spotsToDisplay = allParkingSpots.filter(spot => {
+                const spotLatLng = L.latLng(spot.lat, spot.lng);
                 return vehicleLatLngs.some(vehicleLatLng => spotLatLng.distanceTo(vehicleLatLng) < DISTANCE_TO_PARKING);
             });
         }
@@ -239,13 +238,27 @@
             vehiculesLayer.addLayer(marker);
         });
 
-        restrictedSpotsToDisplay.forEach(function(spot) {
-            var marker = L.circleMarker([spot.lat, spot.lng], {
+        spotsToDisplay.forEach(function(spot) {
+            const isRestricted = isRestrictedInNext24Hours(spot.description, now, in24Hours);
+
+            if (filter24h && !isRestricted) {
+                return; // Skip if filter is on and spot is not restricted in next 24h
+            }
+
+            var markerOptions = {
                 radius: 5,
-                color: 'red',
-                fillColor: '#f03',
                 fillOpacity: 0.5
-            }).bindPopup(spot.description);
+            };
+
+            if (isRestricted) {
+                markerOptions.color = 'red';
+                markerOptions.fillColor = '#f03';
+            } else {
+                markerOptions.color = 'blue';
+                markerOptions.fillColor = '#30f';
+            }
+
+            var marker = L.circleMarker([spot.lat, spot.lng], markerOptions).bindPopup(spot.description);
             restrictedLayer.addLayer(marker);
         });
 
@@ -342,13 +355,7 @@
     };
     emailControl.addTo(map);
 
-    document.getElementById('filter-checkbox').addEventListener('change', function() {
-        if (this.checked) {
-            markers.removeLayer(otherLayer);
-        } else {
-            markers.addLayer(otherLayer);
-        }
-    });
+    document.getElementById('filter-checkbox').addEventListener('change', redrawMap);
 </script>
 
 </body>
