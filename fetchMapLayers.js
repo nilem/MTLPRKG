@@ -61,7 +61,6 @@ async function getAvailableVehicules() {
 
         const response = await axios(options);
         console.log("Données de '/availableVehicles' récupérées avec succès :");
-        console.log(JSON.stringify(response.data, null, 2));
         return response.data;
     } catch (error) {
         console.error("Erreur lors de la récupération des données de '/availableVehicles' :", error.response ? error.response.data : error.message);

@@ -8,33 +8,7 @@
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script type="module">
-        import { getAvailableVehicules } from './fetchMapLayers.js';
-
-        window.addEventListener('load', async () => {
-            const vehicules = await getAvailableVehicules();
-            if (vehicules) {
-                var purpleIcon = L.icon({
-                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png',
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowSize: [41, 41]
-                });
-
-                vehicules.forEach(function(vehicule) {
-                    const lat = vehicule.location.position.lat;
-                    const lon = vehicule.location.position.lon;
-                    const description = `${vehicule.description.model} - ${vehicule.description.plate}`;
-
-                    var marker = L.marker([lat, lon], {icon: purpleIcon});
-                    marker.bindPopup(description);
-                    markers.addLayer(marker);
-                });
-            }
-        });
-    </script>
+    <script type="module" src="fetchMapLayers.js"></script>
 	<style>
 		#map { height: 100vh; }
         #filter-control {
@@ -57,13 +31,21 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        #proximity-filter-control {
+            background: white;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
 	</style>
 </head>
 <body>
 
 <div id="map"></div>
 
-<script>
+<script type="module">
+    import { getAvailableVehicules } from './fetchMapLayers.js';
+
 	var map = L.map('map').setView([45.5019, -73.5674], 13);
 
 	L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -93,6 +75,7 @@
 	var markers = L.markerClusterGroup();
     var restrictedLayer = L.layerGroup();
     var otherLayer = L.layerGroup();
+    var vehiculesLayer = L.layerGroup();
 
 	const dayMap = {
         "LUN": 1, "MAR": 2, "MER": 3, "JEU": 4, "VEN": 5, "SAM": 6, "DIM": 0,
@@ -179,43 +162,94 @@
         return false;
     }
 
-	fetch('assets/signalisation_stationnement_light.json')
-		.then(response => response.json())
-		.then(data => {
-            var redIcon = L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
+    let allVehicles = [];
+    let allRestrictedSpots = [];
+
+    const promiseVehicles = getAvailableVehicules().then(vehicules => {
+        allVehicles = vehicules || [];
+        return allVehicles;
+    });
+
+    const promiseParking = fetch('assets/signalisation_stationnement_light.json')
+        .then(response => response.json())
+        .then(data => {
+            const now = new Date();
+            const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            data.forEach(function(item) {
+                const description = item[2];
+                if (isRestrictedInNext24Hours(description, now, in24Hours)) {
+                    allRestrictedSpots.push({ lat: item[0], lng: item[1], description: description });
+                }
+            });
+            return data;
+        });
+
+    Promise.all([promiseVehicles, promiseParking]).then(() => {
+        redrawMap();
+    });
+
+    function redrawMap() {
+        markers.clearLayers();
+        restrictedLayer.clearLayers();
+        vehiculesLayer.clearLayers();
+
+        var redIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        var purpleIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        const proximityFilter = document.getElementById('proximity-filter-checkbox').checked;
+
+        const DISTANCE_TO_PARKING = 100;
+
+        let vehiclesToDisplay = allVehicles;
+        let restrictedSpotsToDisplay = allRestrictedSpots;
+
+        if (proximityFilter) {
+            const vehicleLatLngs = allVehicles.map(v => L.latLng(v.location.position.lat, v.location.position.lon));
+            const restrictedLatLngs = allRestrictedSpots.map(s => L.latLng(s.lat, s.lng));
+
+            vehiclesToDisplay = allVehicles.filter((v, i) => {
+                const vehicleLatLng = vehicleLatLngs[i];
+                return restrictedLatLngs.some(spotLatLng => vehicleLatLng.distanceTo(spotLatLng) < DISTANCE_TO_PARKING);
             });
 
-			data.forEach(function(item) {
-				const lat = item[0];
-				const lng = item[1];
-				const description = item[2];
+            restrictedSpotsToDisplay = allRestrictedSpots.filter((spot, i) => {
+                const spotLatLng = restrictedLatLngs[i];
+                return vehicleLatLngs.some(vehicleLatLng => spotLatLng.distanceTo(vehicleLatLng) < DISTANCE_TO_PARKING);
+            });
+        }
 
-				const now = new Date();
-				const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-				let isRestricted = isRestrictedInNext24Hours(description, now, in24Hours);
+        vehiclesToDisplay.forEach(function(vehicule) {
+            const lat = vehicule.location.position.lat;
+            const lon = vehicule.location.position.lon;
+            const description = `${vehicule.description.model} - ${vehicule.description.plate}`;
+            var marker = L.marker([lat, lon], { icon: purpleIcon }).bindPopup(description);
+            vehiculesLayer.addLayer(marker);
+        });
 
-				var marker = L.marker([lat, lng]);
-				marker.bindPopup(description);
+        restrictedSpotsToDisplay.forEach(function(spot) {
+            var marker = L.marker([spot.lat, spot.lng], { icon: redIcon }).bindPopup(spot.description);
+            restrictedLayer.addLayer(marker);
+        });
 
-				if (isRestricted) {
-					marker.setIcon(redIcon);
-					restrictedLayer.addLayer(marker);
-				} else {
-					otherLayer.addLayer(marker);
-				}
-			});
-
-            markers.addLayer(restrictedLayer);
-            markers.addLayer(otherLayer);
-			map.addLayer(markers);
-            markers.removeLayer(otherLayer);
-		});
+        markers.addLayer(vehiculesLayer);
+        markers.addLayer(restrictedLayer);
+        map.addLayer(markers);
+    }
 
     var filterControl = L.control({ position: 'topleft' });
     filterControl.onAdd = function(map) {
@@ -225,6 +259,16 @@
         return div;
     };
     filterControl.addTo(map);
+
+    var proximityFilterControl = L.control({ position: 'topleft' });
+    proximityFilterControl.onAdd = function(map) {
+        var div = L.DomUtil.create('div', 'leaflet-control');
+        div.innerHTML = '<div id="proximity-filter-control"><input type="checkbox" id="proximity-filter-checkbox"> <label for="proximity-filter-checkbox">Filtre de proximité</label></div>';
+        L.DomEvent.on(div, 'click dblclick', L.DomEvent.stopPropagation);
+        L.DomEvent.on(div.querySelector('#proximity-filter-checkbox'), 'change', redrawMap);
+        return div;
+    };
+    proximityFilterControl.addTo(map);
 
     var locationControl = L.control({ position: 'topleft' });
     locationControl.onAdd = function(map) {
