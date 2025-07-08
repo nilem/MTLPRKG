@@ -73,7 +73,7 @@
 
 	map.locate({setView: false, maxZoom: 16, watch: true});
 
-	var markers = L.markerClusterGroup();
+	var markers = L.markerClusterGroup({ maxClusterRadius: 20 });
     var restrictedLayer = L.layerGroup();
     var otherLayer = L.layerGroup();
     var vehiculesLayer = L.layerGroup();
@@ -243,7 +243,12 @@
         });
 
         restrictedSpotsToDisplay.forEach(function(spot) {
-            var marker = L.marker([spot.lat, spot.lng], { icon: redIcon }).bindPopup(spot.description);
+            var marker = L.circleMarker([spot.lat, spot.lng], {
+                radius: 5,
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.5
+            }).bindPopup(spot.description);
             restrictedLayer.addLayer(marker);
         });
 
