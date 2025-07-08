@@ -4,10 +4,7 @@
 	<title>A Leaflet map!</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script type="module" src="fetchMapLayers.js"></script>
 	<style>
@@ -73,7 +70,7 @@
 
 	map.locate({setView: false, maxZoom: 16, watch: true});
 
-	var markers = L.markerClusterGroup({ maxClusterRadius: 20 });
+	var markers = L.layerGroup();
     var restrictedLayer = L.layerGroup();
     var otherLayer = L.layerGroup();
     var vehiculesLayer = L.layerGroup();
@@ -255,7 +252,52 @@
         markers.addLayer(vehiculesLayer);
         markers.addLayer(restrictedLayer);
         map.addLayer(markers);
+        updateMarkerSizes();
     }
+
+    function updateMarkerSizes() {
+        var currentZoom = map.getZoom();
+        var newRadius, newIconSize;
+
+        // Adjust size based on zoom level
+        if (currentZoom < 13) {
+            newRadius = 2;
+            newIconSize = [12, 20];
+        } else if (currentZoom < 15) {
+            newRadius = 4;
+            newIconSize = [18, 30];
+        } else {
+            newRadius = 6;
+            newIconSize = [25, 41];
+        }
+        
+        var newIconAnchor = [newIconSize[0] / 2, newIconSize[1]];
+        var newPopupAnchor = [1, -newIconSize[1] + 5];
+        var newShadowSize = [41, 41];
+
+        vehiculesLayer.eachLayer(function(layer) {
+            if (layer.getIcon()) {
+                var oldIcon = layer.options.icon;
+                var newIcon = L.icon({
+                    iconUrl: oldIcon.options.iconUrl,
+                    shadowUrl: oldIcon.options.shadowUrl,
+                    iconSize: newIconSize,
+                    iconAnchor: newIconAnchor,
+                    popupAnchor: newPopupAnchor,
+                    shadowSize: newShadowSize
+                });
+                layer.setIcon(newIcon);
+            }
+        });
+
+        restrictedLayer.eachLayer(function(layer) {
+            if (layer.setRadius) {
+                layer.setRadius(newRadius);
+            }
+        });
+    }
+
+    map.on('zoomend', updateMarkerSizes);
 
     var filterControl = L.control({ position: 'topleft' });
     filterControl.onAdd = function(map) {
