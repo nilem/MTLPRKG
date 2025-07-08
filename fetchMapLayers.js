@@ -4,7 +4,8 @@ const config = {
     anonymousClientSecret: '8600ffa0-2304-46fb-8017-d5da7d0fa4f9',
     anonymousBaseUrl: 'https://aima-us.vulog.net/apiv5',
     anonymousApiKey: '18aed9af-ba0f-41de-b4b8-a65aa7fe9c14',
-    userAgent: 'MonApp/1.0'
+    userAgent: 'MonApp/1.0',
+    montrealCityId: '81580773-9478-4d76-86c1-3128d13538cf', // From /cities[0].id
 };
 
 /**
@@ -39,35 +40,32 @@ async function fetchNewToken() {
     }
 }
 
-/**
- * Récupère les données de "mapping layers" en utilisant un jeton d'authentification.
- */
-async function getMappingLayers() {
+async function getAvailableVehicules() {
     try {
         // Comme dans l'exemple de index.ts, nous demandons un jeton deux fois.
         await fetchNewToken();
         const tokenString = await fetchNewToken();
 
-        console.log("Récupération des données de '/mapping/layers'...");
-
         const options = {
             method: 'GET',
-            url: `${config.anonymousBaseUrl}/mapping/layers`,
+            url: `${config.anonymousBaseUrl}/availableVehicles/${config.montrealCityId}`,
             headers: {
                 'authorization': tokenString,
                 'user-agent': config.userAgent,
                 'X-API-Key': config.anonymousApiKey,
-                'accept': 'application/json'
+                'accept': 'application/json',
+                'user-lat': '45.507770',
+                'user-lon': '-73.562721',
             }
         };
 
         const response = await axios(options);
-        console.log("Données de '/mapping/layers' récupérées avec succès :");
+        console.log("Données de '/availableVehicles' récupérées avec succès :");
         console.log(JSON.stringify(response.data, null, 2));
         return response.data;
     } catch (error) {
-        console.error("Erreur lors de la récupération des données de '/mapping/layers' :", error.response ? error.response.data : error.message);
+        console.error("Erreur lors de la récupération des données de '/availableVehicles' :", error.response ? error.response.data : error.message);
     }
 }
 
-export { getMappingLayers };
+export { getAvailableVehicules };
