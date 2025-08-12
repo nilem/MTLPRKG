@@ -1,5 +1,5 @@
-// Import de la configuration (fonctionne en dev ET production)
-import config from './config.js';
+// Import de la configuration locale (non versionnée)
+import config from './config.local.js';
 
 /**
  * Récupère un nouveau jeton d'accès depuis le service d'identité.
