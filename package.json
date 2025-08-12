@@ -4,7 +4,9 @@
   "type": "module",
   "main": "restriction_logic.js",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:utf8": "jest utf8-check.test.js",
+    "check:utf8": "node -e \"const {quickUtf8Check} = require('./utf8-check.test.js'); quickUtf8Check();\""
   },
   "keywords": [],
   "author": "",
