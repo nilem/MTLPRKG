@@ -1,2 +1,7 @@
 node_modules/
 assets/signalisation_stationnement_full.json
+
+# Configuration locale (contient des secrets)
+config.local.js
+.env
+.env.local

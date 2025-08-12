@@ -1,12 +1,5 @@
-const config = {
-    identityBaseUrl: 'https://aima-us.vulog.net/auth/realms/LEO-CAMTR/protocol/openid-connect/token',
-    anonymousClientId: 'LEO-CAMTR_anon',
-    anonymousClientSecret: '8600ffa0-2304-46fb-8017-d5da7d0fa4f9',
-    anonymousBaseUrl: 'https://aima-us.vulog.net/apiv5',
-    anonymousApiKey: '18aed9af-ba0f-41de-b4b8-a65aa7fe9c14',
-    userAgent: 'MonApp/1.0',
-    montrealCityId: '81580773-9478-4d76-86c1-3128d13538cf', // From /cities[0].id
-};
+// Import de la configuration locale (non versionnée)
+import config from './config.local.js';
 
 /**
  * Récupère un nouveau jeton d'accès depuis le service d'identité.

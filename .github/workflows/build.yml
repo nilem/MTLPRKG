@@ -1,0 +1,50 @@
+name: Build and Test
+
+on: 
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Create config file from secrets and variables
+      run: |
+        cat > config.local.js << EOF
+        const config = {
+            identityBaseUrl: '${{ vars.IDENTITY_BASE_URL }}',
+            anonymousClientId: '${{ vars.ANONYMOUS_CLIENT_ID }}',
+            anonymousClientSecret: '${{ secrets.ANONYMOUS_CLIENT_SECRET }}',
+            anonymousBaseUrl: '${{ vars.ANONYMOUS_BASE_URL }}',
+            anonymousApiKey: '${{ secrets.ANONYMOUS_API_KEY }}',
+            userAgent: '${{ vars.USER_AGENT }}',
+            montrealCityId: '${{ vars.MONTREAL_CITY_ID }}',
+        };
+        export default config;
+        EOF
+        
+    - name: Lint code
+      run: npm run lint
+      continue-on-error: true
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Build project
+      run: npm run build
+      continue-on-error: true
