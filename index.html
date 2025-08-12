@@ -325,18 +325,26 @@
         var newShadowSize = [41, 41];
 
         vehiculesLayer.eachLayer(function(layer) {
-            if (layer.getIcon()) {
+            if (layer.getIcon && layer.getIcon()) {
                 var oldIcon = layer.options.icon;
+                
+                // Skip the low-fuel warning markers
+                if (oldIcon.options.className && oldIcon.options.className.includes('low-fuel-marker')) {
+                    return;
+                }
+                
                 var iconUrl = oldIcon.options.iconUrl;
-                var newIcon = L.icon({
-                    iconUrl: iconUrl,
-                    shadowUrl: oldIcon.options.shadowUrl,
-                    iconSize: newIconSize,
-                    iconAnchor: newIconAnchor,
-                    popupAnchor: newPopupAnchor,
-                    shadowSize: newShadowSize
-                });
-                layer.setIcon(newIcon);
+                if (iconUrl) { // Only update if it's a regular icon marker
+                    var newIcon = L.icon({
+                        iconUrl: iconUrl,
+                        shadowUrl: oldIcon.options.shadowUrl,
+                        iconSize: newIconSize,
+                        iconAnchor: newIconAnchor,
+                        popupAnchor: newPopupAnchor,
+                        shadowSize: newShadowSize
+                    });
+                    layer.setIcon(newIcon);
+                }
             }
         });
 
