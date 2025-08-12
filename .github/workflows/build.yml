@@ -38,6 +38,16 @@ jobs:
         export default config;
         EOF
         
+    - name: Set environment variables for production build
+      run: |
+        echo "IDENTITY_BASE_URL=${{ vars.IDENTITY_BASE_URL }}" >> $GITHUB_ENV
+        echo "ANONYMOUS_CLIENT_ID=${{ vars.ANONYMOUS_CLIENT_ID }}" >> $GITHUB_ENV
+        echo "ANONYMOUS_CLIENT_SECRET=${{ secrets.ANONYMOUS_CLIENT_SECRET }}" >> $GITHUB_ENV
+        echo "ANONYMOUS_BASE_URL=${{ vars.ANONYMOUS_BASE_URL }}" >> $GITHUB_ENV
+        echo "ANONYMOUS_API_KEY=${{ secrets.ANONYMOUS_API_KEY }}" >> $GITHUB_ENV
+        echo "USER_AGENT=${{ vars.USER_AGENT }}" >> $GITHUB_ENV
+        echo "MONTREAL_CITY_ID=${{ vars.MONTREAL_CITY_ID }}" >> $GITHUB_ENV
+        
     - name: Lint code
       run: npm run lint
       continue-on-error: true
