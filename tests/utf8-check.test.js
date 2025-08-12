@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 describe('UTF-8 Encoding Tests', () => {
-    const indexPath = path.join(__dirname, 'index.html');
-    const generatedEmailPath = path.join(__dirname, 'generatedEmail.html');
+    const indexPath = path.join(__dirname, '..', 'index.html');
+    const generatedEmailPath = path.join(__dirname, '..', 'generatedEmail.html');
 
     test('index.html should have UTF-8 meta charset declaration', () => {
         const content = fs.readFileSync(indexPath, 'utf8');

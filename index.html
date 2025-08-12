@@ -36,22 +36,34 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-                .low-fuel-marker {
-            pointer-events: none; /* Allow clicks to pass through to the main marker */
+        .custom-vehicle-marker {
+            cursor: pointer;
         }
-        .fuel-warning {
+        .vehicle-marker-container {
+            position: relative;
+            width: 25px;
+            height: 41px;
+        }
+        .main-marker-icon {
+            width: 25px;
+            height: 41px;
             position: absolute;
-            top: -5px;
-            right: -5px;
-            width: 16px;
-            height: 16px;
+            top: 0;
+            left: 0;
+        }
+        .fuel-warning-overlay {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 14px;
+            height: 14px;
             background: rgba(255, 255, 255, 0.95);
             border: 2px solid #ff4444;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 9px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
             z-index: 1000;
         }
@@ -256,22 +268,26 @@
             const energyLevel = vehicule.status?.energyLevel || 0;
             const description = `${vehicule.description.model} - ${vehicule.description.plate}<br>Essence: ${energyLevel} km`;
             
-            // Always use purple icon for vehicles
-            var marker = L.marker([lat, lon], { icon: purpleIcon }).bindPopup(description);
-            vehiculesLayer.addLayer(marker);
-            
-            // Add a small fuel warning icon for low energy vehicles
+            // Create marker with low fuel indicator if needed
             if (energyLevel < 100) {
-                var lowFuelIcon = L.divIcon({
-                    html: '<div class="fuel-warning">⛽</div>',
-                    iconSize: [25, 41], // Same size as the main marker
-                    iconAnchor: [12, 41], // Same anchor as the main marker
-                    className: 'low-fuel-marker',
-                    popupAnchor: [0, 0]
+                // Use a custom div icon that includes both the purple marker and fuel warning
+                var customIcon = L.divIcon({
+                    html: `<div class="vehicle-marker-container">
+                        <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png" class="main-marker-icon">
+                        <div class="fuel-warning-overlay">⛽</div>
+                    </div>`,
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    className: 'custom-vehicle-marker'
                 });
-                var warningMarker = L.marker([lat, lon], { icon: lowFuelIcon });
-                vehiculesLayer.addLayer(warningMarker);
+                var marker = L.marker([lat, lon], { icon: customIcon }).bindPopup(description);
+            } else {
+                // Regular purple icon for vehicles with sufficient fuel
+                var marker = L.marker([lat, lon], { icon: purpleIcon }).bindPopup(description);
             }
+            
+            vehiculesLayer.addLayer(marker);
         });
 
         spotsToDisplay.forEach(function(spot) {
@@ -328,8 +344,20 @@
             if (layer.getIcon && layer.getIcon()) {
                 var oldIcon = layer.options.icon;
                 
-                // Skip the low-fuel warning markers
-                if (oldIcon.options.className && oldIcon.options.className.includes('low-fuel-marker')) {
+                // Handle custom vehicle markers (with fuel warning)
+                if (oldIcon.options.className && oldIcon.options.className.includes('custom-vehicle-marker')) {
+                    var newIcon = L.divIcon({
+                        html: `<div class="vehicle-marker-container" style="width: ${newIconSize[0]}px; height: ${newIconSize[1]}px;">
+                            <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png" 
+                                 class="main-marker-icon" style="width: ${newIconSize[0]}px; height: ${newIconSize[1]}px;">
+                            <div class="fuel-warning-overlay">⛽</div>
+                        </div>`,
+                        iconSize: newIconSize,
+                        iconAnchor: newIconAnchor,
+                        popupAnchor: newPopupAnchor,
+                        className: 'custom-vehicle-marker'
+                    });
+                    layer.setIcon(newIcon);
                     return;
                 }
                 

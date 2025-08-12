@@ -1,4 +1,4 @@
-import { isRestrictedInNext24Hours } from './restriction_logic.js';
+const { isRestrictedInNext24Hours } = require('../restriction_logic.js');
 
 describe('isRestrictedInNext24Hours', () => {
     // Tuesday, July 1, 2025, 11:00 AM

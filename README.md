@@ -44,11 +44,18 @@ MTLPRKG/
 ├── index.html                              # Interface principale
 ├── index.prod.html                         # Version production
 ├── fetchMapLayers.js                       # Gestion des API et données
+├── map-utils.js                            # Fonctions utilitaires pour la carte
 ├── restriction_logic.js                    # Logique de traitement des restrictions
-├── restriction_logic.test.js               # Tests unitaires
 ├── create_light_version.py                 # Script de traitement des données
 ├── generatedEmail.html                     # Template d'email
 ├── package.json                            # Configuration Node.js
+├── jest.config.json                        # Configuration Jest
+├── tests/                                  # Suite de tests complète
+│   ├── dom-integration.test.js            # Tests d'intégration DOM
+│   ├── map-functionality.test.js          # Tests des fonctionnalités principales
+│   ├── map-utils.test.js                  # Tests des fonctions utilitaires
+│   ├── restriction_logic.test.js          # Tests de la logique de restrictions
+│   └── utf8-check.test.js                 # Tests de protection UTF-8
 └── assets/
     ├── signalisation_stationnement_full.json
     └── signalisation_stationnement_light.json
@@ -56,25 +63,33 @@ MTLPRKG/
 
 ### Installation et Utilisation
 
-1. **Cloner le repository**
-   ```bash
-   git clone [URL_DU_REPO]
-   cd MTLPRKG
-   ```
-
-2. **Installer les dépendances** (pour les tests)
+1. **Installation des dépendances**
    ```bash
    npm install
    ```
 
-3. **Lancer l'application**
-   - Ouvrir `index.html` dans un navigateur web
-   - Ou utiliser un serveur local pour éviter les problèmes CORS
-
-4. **Exécuter les tests**
+2. **Lancement des tests**
    ```bash
-   npm test
+   npm test                  # Tous les tests
+   npm run test:utf8         # Tests UTF-8 uniquement
+   npm run test:functionality # Tests de fonctionnalité
+   npm run test:dom          # Tests d'intégration DOM
+   npm run test:utils        # Tests d'utilitaires
    ```
+
+### Tests et Qualité
+
+Le projet inclut une **suite complète de 50 tests** automatisés qui vérifient :
+
+✅ **Encodage UTF-8** - Détection automatique de problèmes d'encodage  
+✅ **Mise à l'échelle des marqueurs** - Adaptation selon le niveau de zoom  
+✅ **Affichage des véhicules** - Marqueurs violets et indicateurs de carburant faible  
+✅ **Restrictions de stationnement** - Marqueurs colorés selon les restrictions  
+✅ **Interactions utilisateur** - Clics et popups fonctionnels  
+✅ **Filtres** - Fonctionnalité 24h et proximité  
+✅ **Intégration DOM** - Structure HTML et CSS correcte
+
+**Note :** Tous les tests sont organisés dans le dossier `/tests/` pour une meilleure structure du projet.
 
 ### Fonctionnement
 

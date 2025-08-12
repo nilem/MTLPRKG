@@ -1,14 +1,14 @@
-export const dayMap = {
+const dayMap = {
     "LUN": 1, "MAR": 2, "MER": 3, "JEU": 4, "VEN": 5, "SAM": 6, "DIM": 0,
     "LUNDI": 1, "MARDI": 2, "MERCREDI": 3, "JEUDI": 4, "VENDREDI": 5, "SAMEDI": 6, "DIMANCHE": 0
 };
 
-export const monthMap = {
+const monthMap = {
     "JAN": 0, "FEV": 1, "MARS": 2, "AVR": 3, "MAI": 4, "JUIN": 5, "JUI": 6, "AOU": 7, "SEP": 8, "OCT": 9, "NOV": 10, "DEC": 11,
     "JANVIER": 0, "FÉVRIER": 1, "MARS": 2, "AVRIL": 3, "MAI": 4, "JUIN": 5, "JUILLET": 6, "AOÛT": 7, "SEPTEMBRE": 8, "OCTOBRE": 9, "NOVEMBRE": 10, "DÉCEMBRE": 11
 };
 
-export function isRestrictedInNext24Hours(restriction, now, in24Hours) {
+function isRestrictedInNext24Hours(restriction, now, in24Hours) {
     // New format: "\P 13h30-15h30 MERCREDI 1 AVRIL AU 1 DEC."
     const regex2 = /(?:P\s*)?(\d{1,2})h(\d{2})?-(\d{1,2})h(\d{2})?\s+([A-Z.]{3,9})\s+(\d{1,2})\s+([A-ZÈ]+)\s+AU\s+(\d{1,2})\s+([A-ZÈ]+)/i;
     let match2 = restriction.match(regex2);
@@ -81,3 +81,9 @@ export function isRestrictedInNext24Hours(restriction, now, in24Hours) {
     }
     return false;
 }
+
+module.exports = {
+    dayMap,
+    monthMap,
+    isRestrictedInNext24Hours
+};

@@ -1,19 +1,23 @@
 {
   "name": "mtlprkg",
   "version": "1.0.0",
-  "type": "module",
   "main": "restriction_logic.js",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:utf8": "jest utf8-check.test.js",
-    "check:utf8": "node -e \"const {quickUtf8Check} = require('./utf8-check.test.js'); quickUtf8Check();\""
+    "test": "jest",
+    "test:utf8": "jest tests/utf8-check.test.js",
+    "test:functionality": "jest tests/map-functionality.test.js",
+    "test:dom": "jest tests/dom-integration.test.js",
+    "test:utils": "jest tests/map-utils.test.js",
+    "test:all": "jest",
+    "check:utf8": "node -e \"const {quickUtf8Check} = require('./tests/utf8-check.test.js'); quickUtf8Check();\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "jest": "^30.0.3"
+    "jest": "^30.0.3",
+    "jest-environment-jsdom": "^30.0.5"
   },
   "dependencies": {
     "axios": "^1.10.0"
