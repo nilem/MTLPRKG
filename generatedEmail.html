@@ -8,6 +8,10 @@
     <h1>Coller le contenu JSON ici</h1>
     <textarea id="json-input" rows="20" cols="100" style="width: 90%;"></textarea>
     <br>
+    <div style="margin: 10px 0;">
+        <label for="hours-ago">Filtrer les trajets depuis (heures) : </label>
+        <input type="number" id="hours-ago" min="1" max="72" value="12" style="width: 60px;">
+    </div>
     <button id="generate-btn">Générer</button>
     
     <h2>Résultat formaté</h2>
@@ -17,29 +21,31 @@
         document.getElementById('generate-btn').addEventListener('click', function() {
             const jsonInput = document.getElementById('json-input').value;
             const emailContent = document.getElementById('email-content');
+            const hoursAgo = parseInt(document.getElementById('hours-ago').value) || 12;
+            
             try {
                 const parsedData = JSON.parse(jsonInput);
-                const emailText = generateEmailFromData(parsedData);
+                const emailText = generateEmailFromData(parsedData, hoursAgo);
                 emailContent.value = emailText;
             } catch (error) {
                 emailContent.value = 'Erreur de parsing JSON: ' + error.message;
             }
         });
 
-        function generateEmailFromData(data) {
+        function generateEmailFromData(data, hoursAgo = 12) {
             if (!data || !Array.isArray(data)) {
                 return "Données invalides";
             }
 
-            const twelveHoursAgo = new Date();
-            twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
+            const timeFilterDate = new Date();
+            timeFilterDate.setHours(timeFilterDate.getHours() - hoursAgo);
 
             const tripsToday = data.filter(item => {
                 if (!item.trip || !item.trip.tripStartDate) {
                     return false;
                 }
                 const tripDate = new Date(item.trip.tripStartDate);
-                return tripDate >= twelveHoursAgo;
+                return tripDate >= timeFilterDate;
             });
 
             tripsToday.sort((a, b) => new Date(a.trip.tripStartDate) - new Date(b.trip.tripStartDate));
@@ -59,6 +65,7 @@
 
             let body = `Bonjour,\n\n`;
             body += `J'ai déplacé les ${carCount} voitures suivantes, ce ${todayDay} soir, tous situés dans des zones interdites de stationnement le ${tomorrowDay} entre 8h et 12h30\n`;
+            body += `(Filtré pour montrer les trajets depuis les dernières ${hoursAgo} heures)\n`;
 
             let totalSystemCredit = 0;
 
