@@ -72,7 +72,7 @@
             tripsToday.forEach(trip => {
                 const plate = trip.vehiculePlate || 'N/A';
                 const creditCardCost = trip.grossRemainingToBePaid ? parseFloat(trip.grossRemainingToBePaid).toFixed(2) : '0.00';
-                const systemCreditCost = trip.withoutTaxAmountForTripSystemCredit ? parseFloat(trip.withoutTaxAmountForTripSystemCredit) : 0;
+                const systemCreditCost = trip.withTaxAmountForTripSystemCredit ? parseFloat(trip.withTaxAmountForTripSystemCredit) : 0;
                 totalSystemCredit += systemCreditCost;
                 body += `* ${plate}. Coût du trajet : ${systemCreditCost.toFixed(2)}$ en crédit + ${creditCardCost}$ sur carte de crédit.\n`;
             });
