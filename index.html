@@ -58,7 +58,6 @@
             width: 14px;
             height: 14px;
             background: rgba(255, 255, 255, 0.95);
-            border: 2px solid #ff4444;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -66,6 +65,12 @@
             font-size: 9px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
             z-index: 1000;
+        }
+        .fuel-warning-overlay.low {
+            border: 2px solid #ffaa00;
+        }
+        .fuel-warning-overlay.critical {
+            border: 2px solid #ff4444;
         }
         .time-warning-overlay {
             position: absolute;
@@ -247,6 +252,16 @@
         }
     }
 
+    function getFuelWarningLevel(energyLevel) {
+        if (energyLevel < 75) {
+            return 'critical'; // Rouge
+        } else if (energyLevel < 150) {
+            return 'low'; // Jaune
+        } else {
+            return null; // Pas d'avertissement
+        }
+    }
+
     let allVehicles = [];
     let allParkingSpots = [];
     let vehicleUsages = {};
@@ -335,16 +350,16 @@
             const lon = vehicule.location.position.lon;
             const energyLevel = vehicule.status?.energyLevel || 0;
             const plate = vehicule.description.plate;
-            const description = `${vehicule.description.model} - ${plate}<br>⛽: ${energyLevel} km`;
+            const description = `${vehicule.description.model} - ${plate}<br>Essence: ${energyLevel} km`;
             
-            const hasLowFuel = energyLevel < 100;
+            const fuelWarning = getFuelWarningLevel(energyLevel);
             const dataAge = isVehicleDataOld(plate);
             
             // Create marker with warning indicators if needed
-            if (hasLowFuel || dataAge) {
+            if (fuelWarning || dataAge) {
                 let overlayHtml = '';
-                if (hasLowFuel) {
-                    overlayHtml += '<div class="fuel-warning-overlay">⛽</div>';
+                if (fuelWarning) {
+                    overlayHtml += `<div class="fuel-warning-overlay ${fuelWarning}">⛽</div>`;
                 }
                 if (dataAge) {
                     overlayHtml += `<div class="time-warning-overlay ${dataAge}">🕐</div>`;
@@ -428,7 +443,7 @@
                 if (oldIcon.options.className && oldIcon.options.className.includes('custom-vehicle-marker')) {
                     // Extract the existing overlay HTML to preserve warning types and classes
                     var oldHtml = oldIcon.options.html;
-                    var overlayMatch = oldHtml.match(/<div class="(?:fuel-warning-overlay|time-warning-overlay[^"]*)">[^<]*<\/div>/g);
+                    var overlayMatch = oldHtml.match(/<div class="(?:fuel-warning-overlay[^"]*|time-warning-overlay[^"]*)">[^<]*<\/div>/g);
                     var overlayHtml = overlayMatch ? overlayMatch.join('') : '';
                     
                     var newIcon = L.divIcon({
