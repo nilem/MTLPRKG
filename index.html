@@ -67,6 +67,22 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
             z-index: 1000;
         }
+        .time-warning-overlay {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 14px;
+            height: 14px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #ff8800;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            z-index: 1000;
+        }
 	</style>
 </head>
 <body>
@@ -192,13 +208,40 @@
         return false;
     }
 
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    function isVehicleDataOld(plate) {
+        const vehiculeLastUpdate = vehicleUsages?.vehicles[plate]?.lastUpdate;
+        if (!vehiculeLastUpdate) {
+            return false;
+        }
+        
+        const lastUpdate = new Date(vehiculeLastUpdate);        
+        return lastUpdate < yesterday;
+    }
+
     let allVehicles = [];
     let allParkingSpots = [];
+    let vehicleUsages = {};
 
     const promiseVehicles = getAvailableVehicules().then(vehicules => {
         allVehicles = vehicules || [];
         return allVehicles;
     });
+
+    const promiseVehicleUsages = fetch('https://nilem.github.io/MTLPRKG-STORE/vehiculeUsages.latest.json')
+        .then(response => response.json())
+        .then(data => {
+            vehicleUsages = data || {};
+            return vehicleUsages;
+        })
+        .catch(error => {
+            console.error('Erreur lors de la récupération des données d\'usage des véhicules:', error);
+            vehicleUsages = {};
+            return vehicleUsages;
+        });
 
     const promiseParking = fetch('assets/signalisation_stationnement_light.json')
         .then(response => response.json())
@@ -207,7 +250,7 @@
             return allParkingSpots;
         });
 
-    Promise.all([promiseVehicles, promiseParking]).then(() => {
+    Promise.all([promiseVehicles, promiseVehicleUsages, promiseParking]).then(() => {
         redrawMap();
     });
 
@@ -266,15 +309,27 @@
             const lat = vehicule.location.position.lat;
             const lon = vehicule.location.position.lon;
             const energyLevel = vehicule.status?.energyLevel || 0;
-            const description = `${vehicule.description.model} - ${vehicule.description.plate}<br>Essence: ${energyLevel} km`;
+            const plate = vehicule.description.plate;
+            const description = `${vehicule.description.model} - ${plate}<br>Essence: ${energyLevel} km`;
             
-            // Create marker with low fuel indicator if needed
-            if (energyLevel < 100) {
-                // Use a custom div icon that includes both the purple marker and fuel warning
+            const hasLowFuel = energyLevel < 100;
+            const hasOldData = isVehicleDataOld(plate);
+            
+            // Create marker with warning indicators if needed
+            if (hasLowFuel || hasOldData) {
+                let overlayHtml = '';
+                if (hasLowFuel) {
+                    overlayHtml += '<div class="fuel-warning-overlay">⛽</div>';
+                }
+                if (hasOldData) {
+                    overlayHtml += '<div class="time-warning-overlay">🕐</div>';
+                }
+                
+                // Use a custom div icon that includes the purple marker and warning overlays
                 var customIcon = L.divIcon({
                     html: `<div class="vehicle-marker-container">
                         <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png" class="main-marker-icon">
-                        <div class="fuel-warning-overlay">⛽</div>
+                        ${overlayHtml}
                     </div>`,
                     iconSize: [25, 41],
                     iconAnchor: [12, 41],
@@ -283,7 +338,7 @@
                 });
                 var marker = L.marker([lat, lon], { icon: customIcon }).bindPopup(description);
             } else {
-                // Regular purple icon for vehicles with sufficient fuel
+                // Regular purple icon for vehicles without warnings
                 var marker = L.marker([lat, lon], { icon: purpleIcon }).bindPopup(description);
             }
             
@@ -344,13 +399,18 @@
             if (layer.getIcon && layer.getIcon()) {
                 var oldIcon = layer.options.icon;
                 
-                // Handle custom vehicle markers (with fuel warning)
+                // Handle custom vehicle markers (with warnings)
                 if (oldIcon.options.className && oldIcon.options.className.includes('custom-vehicle-marker')) {
+                    // Extract the existing overlay HTML to preserve warning types
+                    var oldHtml = oldIcon.options.html;
+                    var overlayMatch = oldHtml.match(/<div class="(?:fuel-warning-overlay|time-warning-overlay)">.*?<\/div>/g);
+                    var overlayHtml = overlayMatch ? overlayMatch.join('') : '';
+                    
                     var newIcon = L.divIcon({
                         html: `<div class="vehicle-marker-container" style="width: ${newIconSize[0]}px; height: ${newIconSize[1]}px;">
                             <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png" 
                                  class="main-marker-icon" style="width: ${newIconSize[0]}px; height: ${newIconSize[1]}px;">
-                            <div class="fuel-warning-overlay">⛽</div>
+                            ${overlayHtml}
                         </div>`,
                         iconSize: newIconSize,
                         iconAnchor: newIconAnchor,
