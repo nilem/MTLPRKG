@@ -104,6 +104,7 @@
 
 <script type="module">
     import { getAvailableVehicules } from './fetchMapLayers.js';
+    import { formatTimeSinceLastUpdate } from './time-utils.js';
 
 	var map = L.map('map').setView([45.5019, -73.5674], 13);
 
@@ -226,11 +227,11 @@
     yesterday.setHours(0, 0, 0, 0);
 
     function isVehicleDataOld(plate) {
-        if (!vehicleUsages[plate] || !vehicleUsages[plate].lastUpdate) {
+        if (!vehicleUsages.vehicles || !vehicleUsages.vehicles[plate] || !vehicleUsages.vehicles[plate].lastUpdate) {
             return null;
         }
         
-        const lastUpdate = new Date(vehicleUsages[plate].lastUpdate);
+        const lastUpdate = new Date(vehicleUsages.vehicles[plate].lastUpdate);
         const now = new Date();
         const today = new Date(now);
         today.setHours(0, 0, 0, 0);
@@ -350,7 +351,12 @@
             const lon = vehicule.location.position.lon;
             const energyLevel = vehicule.status?.energyLevel || 0;
             const plate = vehicule.description.plate;
-            const description = `${vehicule.description.model} - ${plate}<br>Essence: ${energyLevel} km`;
+            
+            // Get time since last update
+            const lastUpdateStr = vehicleUsages.vehicles?.[plate]?.lastUpdate;
+            const timeSinceUpdate = formatTimeSinceLastUpdate(lastUpdateStr);
+            
+            const description = `${vehicule.description.model} - ${plate}<br>⛽: ${energyLevel} km<br>🕐: ${timeSinceUpdate}`;
             
             const fuelWarning = getFuelWarningLevel(energyLevel);
             const dataAge = isVehicleDataOld(plate);
