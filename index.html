@@ -88,13 +88,13 @@
             z-index: 1000;
         }
         .time-warning-overlay.yesterday {
-            border: 2px solid #00aa00;
+            border: 2px solid #ffaa00; /* Jaune pour hier */
         }
         .time-warning-overlay.day-before {
-            border: 2px solid #ffaa00;
+            border: 2px solid #ff4444; /* Rouge pour avant-hier ou plus ancien */
         }
         .time-warning-overlay.older {
-            border: 2px solid #ff4444;
+            border: 2px solid #ff4444; /* Rouge pour plus ancien (au cas où) */
         }
 	</style>
 </head>
@@ -242,14 +242,12 @@
         const dayBefore = new Date(today);
         dayBefore.setDate(dayBefore.getDate() - 2);
         
-        if (lastUpdate >= yesterday) {
-            return null; // Aujourd'hui ou plus récent
-        } else if (lastUpdate >= dayBefore) {
-            return 'yesterday'; // Hier
-        } else if (lastUpdate >= new Date(dayBefore.getTime() - 24 * 60 * 60 * 1000)) {
-            return 'day-before'; // Avant-hier
+        if (lastUpdate >= today) {
+            return null; // Aujourd'hui - pas d'icône
+        } else if (lastUpdate >= yesterday) {
+            return 'yesterday'; // Hier - icône jaune
         } else {
-            return 'older'; // Plus ancien
+            return 'day-before'; // Avant-hier ou plus ancien - icône rouge
         }
     }
 
