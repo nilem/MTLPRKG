@@ -44,33 +44,65 @@
             background: white;
             border: 1px solid #ccc;
             border-radius: 5px;
-            padding: 10px;
+            padding: 15px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             z-index: 1000;
-            min-width: 200px;
+            min-width: 280px;
             display: none;
+        }
+        .search-popup h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .search-section {
+            margin-bottom: 15px;
+        }
+        .search-section:last-child {
+            margin-bottom: 0;
         }
         .search-popup input {
             width: 100%;
-            padding: 5px;
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 3px;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+        }
+        .button-group {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
         }
         .search-popup button {
             background: #007cad;
             color: white;
             border: none;
-            padding: 5px 10px;
+            padding: 8px 12px;
             border-radius: 3px;
             cursor: pointer;
-            margin-right: 5px;
+            flex: 1;
+            font-size: 12px;
         }
         .search-popup button:hover {
             background: #005a7a;
         }
+        .search-popup button.secondary {
+            background: #6c757d;
+        }
+        .search-popup button.secondary:hover {
+            background: #545b62;
+        }
+        .search-popup button.action {
+            background: #28a745;
+        }
+        .search-popup button.action:hover {
+            background: #1e7e34;
+        }
         .search-result {
-            margin-top: 5px;
+            margin-top: 8px;
             padding: 8px;
             background: #f0f0f0;
             border-radius: 3px;
@@ -88,6 +120,27 @@
             background: #f8d7da;
             color: #721c24;
             border-left: 3px solid #dc3545;
+        }
+        .filter-section {
+            margin-bottom: 10px;
+        }
+        .filter-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+        .filter-item input[type="checkbox"] {
+            margin-right: 8px;
+            margin-bottom: 0;
+        }
+        .filter-item label {
+            margin: 0;
+            font-size: 12px;
+            cursor: pointer;
+            flex: 1;
         }
         #proximity-filter-control {
             background: white;
@@ -615,62 +668,58 @@
 
     map.on('zoomend', updateMarkerSizes);
 
-    var filterControl = L.control({ position: 'topleft' });
-    filterControl.onAdd = function(map) {
-        var div = L.DomUtil.create('div', 'leaflet-control');
-        div.innerHTML = '<div id="filter-control"><input type="checkbox" id="filter-checkbox" checked> <label for="filter-checkbox">Masquer la signalisation de plus de 24h</label></div>';
-        L.DomEvent.on(div, 'click dblclick', L.DomEvent.stopPropagation);
-        return div;
-    };
-    filterControl.addTo(map);
-
-    var proximityFilterControl = L.control({ position: 'topleft' });
-    proximityFilterControl.onAdd = function(map) {
-        var div = L.DomUtil.create('div', 'leaflet-control');
-        div.innerHTML = '<div id="proximity-filter-control"><input type="checkbox" id="proximity-filter-checkbox"> <label for="proximity-filter-checkbox">Filtre de proximité</label></div>';
-        L.DomEvent.on(div, 'click dblclick', L.DomEvent.stopPropagation);
-        L.DomEvent.on(div.querySelector('#proximity-filter-checkbox'), 'change', redrawMap);
-        return div;
-    };
-    proximityFilterControl.addTo(map);
-
-    var locationControl = L.control({ position: 'topleft' });
-    locationControl.onAdd = function(map) {
-        var div = L.DomUtil.create('div', 'leaflet-control');
-        div.innerHTML = '<div id="location-control">Ma position</div>';
-        L.DomEvent.on(div, 'click dblclick', L.DomEvent.stopPropagation);
-        L.DomEvent.on(div, 'click', function () {
-            map.locate({setView: true, maxZoom: 16});
-        });
-        return div;
-    };
-    locationControl.addTo(map);
-
-    var emailControl = L.control({ position: 'topleft' });
-    emailControl.onAdd = function(map) {
-        var div = L.DomUtil.create('div', 'leaflet-control');
-        div.innerHTML = '<div id="email-control">Générer courriel</div>';
-        L.DomEvent.on(div, 'click dblclick', L.DomEvent.stopPropagation);
-        L.DomEvent.on(div, 'click', function() {
-            window.open('generatedEmail.html', '_blank');
-        });
-        return div;
-    };
-    emailControl.addTo(map);
-
     var searchControl = L.control({ position: 'topleft' });
     searchControl.onAdd = function(map) {
         var div = L.DomUtil.create('div', 'leaflet-control');
         div.innerHTML = `
             <div id="search-control">
-                Rechercher véhicule
+                🔍 Menu
                 <div class="search-popup" id="search-popup">
-                    <input type="text" id="plate-input" placeholder="Entrez la plaque d'immatriculation" maxlength="10">
-                    <div>
-                        <button id="search-button">Rechercher</button>
-                        <button id="close-search-button">Fermer</button>
+                    
+                    <div class="search-section">
+                        <h4>🚗 Rechercher Véhicule</h4>
+                        <input type="text" id="plate-input" placeholder="Entrez la plaque d'immatriculation" maxlength="10">
+                        <div class="button-group">
+                            <button id="search-button">Rechercher</button>
+                            <button id="clear-search-button" class="secondary">Effacer</button>
+                        </div>
+                        <div id="search-result"></div>
                     </div>
-                    <div id="search-result"></div>
+                    
+                    <div class="search-section">
+                        <h4>� Filtres</h4>
+                        <div class="filter-section">
+                            <div class="filter-item">
+                                <input type="checkbox" id="filter-checkbox" checked>
+                                <label for="filter-checkbox">Masquer signalisation +24h</label>
+                            </div>
+                            <div class="filter-item">
+                                <input type="checkbox" id="proximity-filter-checkbox">
+                                <label for="proximity-filter-checkbox">Filtre de proximité</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="search-section">
+                        <h4>�📍 Navigation</h4>
+                        <div class="button-group">
+                            <button id="location-button" class="action">Ma Position</button>
+                        </div>
+                    </div>
+                    
+                    <div class="search-section">
+                        <h4>📧 Outils</h4>
+                        <div class="button-group">
+                            <button id="email-button" class="action">Générer Courriel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="search-section">
+                        <div class="button-group">
+                            <button id="close-search-button" class="secondary">Fermer Menu</button>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
         `;
@@ -681,9 +730,22 @@
             }
         });
         
-        // Ajouter les event listeners pour les boutons
+        // Ajouter les event listeners pour tous les boutons
         L.DomEvent.on(div.querySelector('#search-button'), 'click', performSearch);
+        L.DomEvent.on(div.querySelector('#clear-search-button'), 'click', clearSearch);
         L.DomEvent.on(div.querySelector('#close-search-button'), 'click', closeSearch);
+        L.DomEvent.on(div.querySelector('#location-button'), 'click', function() {
+            map.locate({setView: true, maxZoom: 16});
+            closeSearch();
+        });
+        L.DomEvent.on(div.querySelector('#email-button'), 'click', function() {
+            window.open('generatedEmail.html', '_blank');
+            closeSearch();
+        });
+        
+        // Ajouter les event listeners pour les filtres
+        L.DomEvent.on(div.querySelector('#filter-checkbox'), 'change', redrawMap);
+        L.DomEvent.on(div.querySelector('#proximity-filter-checkbox'), 'change', redrawMap);
         
         return div;
     };
@@ -704,6 +766,12 @@
         document.getElementById('search-popup').style.display = 'none';
         document.getElementById('search-result').innerHTML = '';
         document.getElementById('plate-input').value = '';
+    }
+
+    function clearSearch() {
+        document.getElementById('plate-input').value = '';
+        document.getElementById('search-result').innerHTML = '';
+        document.getElementById('plate-input').focus();
     }
 
     function performSearch() {
@@ -730,7 +798,6 @@
         }
     });
 
-    document.getElementById('filter-checkbox').addEventListener('change', redrawMap);
 </script>
 
 </body>
