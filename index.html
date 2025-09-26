@@ -74,7 +74,6 @@
             width: 14px;
             height: 14px;
             background: rgba(255, 255, 255, 0.95);
-            border: 2px solid #ff8800;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -82,6 +81,15 @@
             font-size: 9px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
             z-index: 1000;
+        }
+        .time-warning-overlay.yesterday {
+            border: 2px solid #00aa00;
+        }
+        .time-warning-overlay.day-before {
+            border: 2px solid #ffaa00;
+        }
+        .time-warning-overlay.older {
+            border: 2px solid #ff4444;
         }
 	</style>
 </head>
@@ -213,13 +221,30 @@
     yesterday.setHours(0, 0, 0, 0);
 
     function isVehicleDataOld(plate) {
-        const vehiculeLastUpdate = vehicleUsages?.vehicles[plate]?.lastUpdate;
-        if (!vehiculeLastUpdate) {
-            return false;
+        if (!vehicleUsages[plate] || !vehicleUsages[plate].lastUpdate) {
+            return null;
         }
         
-        const lastUpdate = new Date(vehiculeLastUpdate);        
-        return lastUpdate < yesterday;
+        const lastUpdate = new Date(vehicleUsages[plate].lastUpdate);
+        const now = new Date();
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const dayBefore = new Date(today);
+        dayBefore.setDate(dayBefore.getDate() - 2);
+        
+        if (lastUpdate >= yesterday) {
+            return null; // Aujourd'hui ou plus récent
+        } else if (lastUpdate >= dayBefore) {
+            return 'yesterday'; // Hier
+        } else if (lastUpdate >= new Date(dayBefore.getTime() - 24 * 60 * 60 * 1000)) {
+            return 'day-before'; // Avant-hier
+        } else {
+            return 'older'; // Plus ancien
+        }
     }
 
     let allVehicles = [];
@@ -310,19 +335,19 @@
             const lon = vehicule.location.position.lon;
             const energyLevel = vehicule.status?.energyLevel || 0;
             const plate = vehicule.description.plate;
-            const description = `${vehicule.description.model} - ${plate}<br>Essence: ${energyLevel} km`;
+            const description = `${vehicule.description.model} - ${plate}<br>⛽: ${energyLevel} km`;
             
             const hasLowFuel = energyLevel < 100;
-            const hasOldData = isVehicleDataOld(plate);
+            const dataAge = isVehicleDataOld(plate);
             
             // Create marker with warning indicators if needed
-            if (hasLowFuel || hasOldData) {
+            if (hasLowFuel || dataAge) {
                 let overlayHtml = '';
                 if (hasLowFuel) {
                     overlayHtml += '<div class="fuel-warning-overlay">⛽</div>';
                 }
-                if (hasOldData) {
-                    overlayHtml += '<div class="time-warning-overlay">🕐</div>';
+                if (dataAge) {
+                    overlayHtml += `<div class="time-warning-overlay ${dataAge}">🕐</div>`;
                 }
                 
                 // Use a custom div icon that includes the purple marker and warning overlays
@@ -401,9 +426,9 @@
                 
                 // Handle custom vehicle markers (with warnings)
                 if (oldIcon.options.className && oldIcon.options.className.includes('custom-vehicle-marker')) {
-                    // Extract the existing overlay HTML to preserve warning types
+                    // Extract the existing overlay HTML to preserve warning types and classes
                     var oldHtml = oldIcon.options.html;
-                    var overlayMatch = oldHtml.match(/<div class="(?:fuel-warning-overlay|time-warning-overlay)">.*?<\/div>/g);
+                    var overlayMatch = oldHtml.match(/<div class="(?:fuel-warning-overlay|time-warning-overlay[^"]*)">[^<]*<\/div>/g);
                     var overlayHtml = overlayMatch ? overlayMatch.join('') : '';
                     
                     var newIcon = L.divIcon({
