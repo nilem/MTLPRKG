@@ -4,7 +4,6 @@
  * @returns {string} - Formatted time string (e.g., "2h", "1j 3h", "15min")
  */
 function formatTimeSinceLastUpdate(lastUpdateStr) {
-    console.log('formatTimeSinceLastUpdate', lastUpdateStr);
     if (!lastUpdateStr) {
         return 'Inconnu';
     }
