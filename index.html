@@ -363,7 +363,16 @@
           return null;
       }
 
-      const vehicleHasMoved = hasVehicleMoved(vehicleUsages.vehicles?.[plate]?.position, vehicule.location.position);
+      const currentState = { 
+        position: vehicleUsages.vehicles?.[plate]?.position, 
+        lastEnergyLevel: vehicleUsages.vehicles?.[plate]?.lastEnergyLevel,
+      };
+      const newState = { 
+        position:  vehicule.location.position, 
+        lastEnergyLevel: vehicule.status.energyLevel 
+      };
+
+      const vehicleHasMoved = hasVehicleMoved(currentState, newState);
       
       const lastUpdate = new Date(vehicleUsages.vehicles[plate].lastUpdate);
       const now = new Date();
@@ -397,14 +406,21 @@
 
 
     /**
-     * Détermine si un véhicule a bougé en comparant les positions
-     * @param {Object} position1 Première position {lat, lon}
-     * @param {Object} position2 Deuxième position {lat, lon}
-     * @returns {boolean} true si le véhicule a bougé
+     * Détermine si un véhicule a bougé en comparant les positions et les niveaux d'énergie
+     * @param {Object} vehicleState1 Premier état du véhicule {position: {lat, lon}, lastEnergyLevel}
+     * @param {Object} vehicleState2 Deuxième état du véhicule {position: {lat, lon}, lastEnergyLevel}
+     * @returns {boolean} true si le véhicule a bougé ou si l'énergie a changé
      */
-    export function hasVehicleMoved(position1, position2) {
+    export function hasVehicleMoved(vehicleState1, vehicleState2) {
+        if (!vehicleState1 || !vehicleState2) {
+            return true; // Considérer comme déplacé si on n'a pas les deux états
+        }
+
+        const position1 = vehicleState1.position;
+        const position2 = vehicleState2.position;
+        
         if (!position1 || !position2) {
-            return true; // Considérer comme déplacé si on n'a pas les deux positions
+            return true;
         }
 
         // Comparer seulement les 4 premiers chiffres après la virgule pour déterminer un mouvement significatif
@@ -413,7 +429,14 @@
         const lat2Truncated = Math.trunc(position2.lat * 10000) / 10000;
         const lon2Truncated = Math.trunc(position2.lon * 10000) / 10000;
 
-        return lat1Truncated !== lat2Truncated || lon1Truncated !== lon2Truncated;
+        const positionChanged = lat1Truncated !== lat2Truncated || lon1Truncated !== lon2Truncated;
+
+        // Vérifier si le niveau d'énergie a changé
+        const energy1 = vehicleState1.lastEnergyLevel;
+        const energy2 = vehicleState2.lastEnergyLevel;
+        const energyChanged = (energy1 !== undefined && energy2 !== undefined) && energy1 !== energy2;
+
+        return positionChanged || energyChanged;
     }
 
     function getBrandLetter(model) {
@@ -580,7 +603,18 @@
             
             // Get time since last update
             const lastUpdateStr = vehicleUsages.vehicles?.[plate]?.lastUpdate;
-            const vehicleHasMoved = hasVehicleMoved(vehicleUsages.vehicles?.[plate]?.position, vehicule.location.position);
+
+            const currentState = { 
+              position: vehicleUsages.vehicles?.[plate]?.position, 
+              lastEnergyLevel: vehicleUsages.vehicles?.[plate]?.lastEnergyLevel,
+            };
+            const newState = { 
+              position: { lat, lon }, 
+              lastEnergyLevel: energyLevel 
+            };
+
+            const vehicleHasMoved = hasVehicleMoved(currentState, newState);
+            console.log('vehicleHasMoved', vehicleHasMoved);
             const timeSinceUpdate = vehicleHasMoved ? '< 1h' : formatTimeSinceLastUpdate(lastUpdateStr);
             
             const description = `${model} - ${plate}<br>⛽: ${energyLevel} km<br>🕐: ${timeSinceUpdate}`;
