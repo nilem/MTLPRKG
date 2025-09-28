@@ -356,29 +356,33 @@
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0);
 
-    function isVehicleDataOld(plate) {
-        if (!vehicleUsages.vehicles || !vehicleUsages.vehicles[plate] || !vehicleUsages.vehicles[plate].lastUpdate) {
-            return null;
-        }
-        
-        const lastUpdate = new Date(vehicleUsages.vehicles[plate].lastUpdate);
-        const now = new Date();
-        const today = new Date(now);
-        today.setHours(0, 0, 0, 0);
-        
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        const dayBefore = new Date(today);
-        dayBefore.setDate(dayBefore.getDate() - 2);
-        
-        if (lastUpdate >= today) {
-            return null; // Aujourd'hui - pas d'icône
-        } else if (lastUpdate >= yesterday) {
-            return 'yesterday'; // Hier - icône jaune
-        } else {
-            return 'day-before'; // Avant-hier ou plus ancien - icône rouge
-        }
+    function isVehicleDataOld(vehicule) {
+      const plate = vehicule.description.plate;
+
+      if (!vehicleUsages.vehicles || !vehicleUsages.vehicles[plate] || !vehicleUsages.vehicles[plate].lastUpdate) {
+          return null;
+      }
+
+      const vehicleHasMoved = hasVehicleMoved(vehicleUsages.vehicles?.[plate]?.position, vehicule.location.position);
+      
+      const lastUpdate = new Date(vehicleUsages.vehicles[plate].lastUpdate);
+      const now = new Date();
+      const today = new Date(now);
+      today.setHours(0, 0, 0, 0);
+      
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const dayBefore = new Date(today);
+      dayBefore.setDate(dayBefore.getDate() - 2);
+      
+      if (vehicleHasMoved || lastUpdate >= today) {
+          return null; // Aujourd'hui - pas d'icône
+      } else if (lastUpdate >= yesterday) {
+          return 'yesterday'; // Hier - icône jaune
+      } else {
+          return 'day-before'; // Avant-hier ou plus ancien - icône rouge
+      }
     }
 
     function getFuelWarningLevel(energyLevel) {
@@ -389,6 +393,15 @@
         } else {
             return null; // Pas d'avertissement
         }
+    }
+
+
+    function hasVehicleMoved(position1, position2) {
+        if (!position1 || !position2) {
+            return true; // Considérer comme déplacé si on n'a pas les deux positions
+        }
+
+        return position1.lat !== position2.lat || position1.lon !== position2.lon;
     }
 
     function getBrandLetter(model) {
@@ -555,12 +568,13 @@
             
             // Get time since last update
             const lastUpdateStr = vehicleUsages.vehicles?.[plate]?.lastUpdate;
-            const timeSinceUpdate = formatTimeSinceLastUpdate(lastUpdateStr);
+            const vehicleHasMoved = hasVehicleMoved(vehicleUsages.vehicles?.[plate]?.position, vehicule.location.position);
+            const timeSinceUpdate = vehicleHasMoved ? '< 1h' : formatTimeSinceLastUpdate(lastUpdateStr);
             
             const description = `${model} - ${plate}<br>⛽: ${energyLevel} km<br>🕐: ${timeSinceUpdate}`;
             
             const fuelWarning = getFuelWarningLevel(energyLevel);
-            const dataAge = isVehicleDataOld(plate);
+            const dataAge = isVehicleDataOld(vehicule);
             const brandLetter = getBrandLetter(model);
             
             // Get current zoom level to decide whether to show brand letter
