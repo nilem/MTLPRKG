@@ -614,7 +614,6 @@
             };
 
             const vehicleHasMoved = hasVehicleMoved(currentState, newState);
-            console.log('vehicleHasMoved', vehicleHasMoved);
             const timeSinceUpdate = vehicleHasMoved ? '< 1h' : formatTimeSinceLastUpdate(lastUpdateStr);
             
             const description = `${model} - ${plate}<br>⛽: ${energyLevel} km<br>🕐: ${timeSinceUpdate}`;
