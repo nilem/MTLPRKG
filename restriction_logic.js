@@ -82,8 +82,18 @@ function isRestrictedInNext24Hours(restriction, now, in24Hours) {
     return false;
 }
 
-module.exports = {
+// Export for ES6 modules (browser)
+export {
     dayMap,
     monthMap,
     isRestrictedInNext24Hours
 };
+
+// Export for CommonJS (Node.js/Jest)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        dayMap,
+        monthMap,
+        isRestrictedInNext24Hours
+    };
+}
