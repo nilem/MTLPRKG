@@ -9,8 +9,124 @@ const monthMap = {
 };
 
 function isRestrictedInNext24Hours(restriction, now, in24Hours) {
-    // New format: "\P 13h30-15h30 MERCREDI 1 AVRIL AU 1 DEC."
-    const regex2 = /(?:P\s*)?(\d{1,2})h(\d{2})?-(\d{1,2})h(\d{2})?\s+([A-Z.]{3,9})\s+(\d{1,2})\s+([A-ZÈ]+)\s+AU\s+(\d{1,2})\s+([A-ZÈ]+)/i;
+    // New format with day range: "\P 08h-18h LUN. AU VEN."
+    const regexDayRange = /(?:\\?P\s*)?(\d{1,2})h(\d{2})?-(\d{1,2})h(\d{2})?\s+([A-Z]{3,9})\.?\s+AU\s+([A-Z]{3,9})\.?(?:\s+(\d{1,2})\s+([A-ZÈ]+)\s+AU\s+(\d{1,2})\s+([A-ZÈ]+))?/i;
+    let matchDayRange = restriction.match(regexDayRange);
+
+    if (matchDayRange) {
+        const startHour = parseInt(matchDayRange[1], 10);
+        const startMinute = matchDayRange[2] ? parseInt(matchDayRange[2], 10) : 0;
+        const endHour = parseInt(matchDayRange[3], 10);
+        const endMinute = matchDayRange[4] ? parseInt(matchDayRange[4], 10) : 0;
+        const startDayStr = matchDayRange[5].toUpperCase().replace('.', '');
+        const endDayStr = matchDayRange[6].toUpperCase().replace('.', '');
+        
+        const startDay = dayMap[startDayStr];
+        const endDay = dayMap[endDayStr];
+
+        if (startDay === undefined || endDay === undefined) return false;
+
+        // Check for optional month range
+        let inMonthRange = true;
+        if (matchDayRange[7]) {
+            const startMonthDay = parseInt(matchDayRange[7], 10);
+            const startMonthStr = matchDayRange[8].toUpperCase();
+            const endMonthDay = parseInt(matchDayRange[9], 10);
+            const endMonthStr = matchDayRange[10].toUpperCase().replace('.','');
+            
+            const startMonth = monthMap[startMonthStr];
+            const endMonth = monthMap[endMonthStr];
+
+            if (startMonth !== undefined && endMonth !== undefined) {
+                const currentYear = now.getFullYear();
+                const startDate = new Date(currentYear, startMonth, startMonthDay);
+                const endDate = new Date(currentYear, endMonth, endMonthDay);
+                inMonthRange = (now >= startDate && now <= endDate);
+            }
+        }
+
+        if (inMonthRange) {
+            // Check each day in the next 7 days
+            for (let i = 0; i < 7; i++) {
+                let restrictionDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+                const dayOfWeek = restrictionDate.getDay();
+                
+                // Check if this day is in the range
+                let isInDayRange = false;
+                if (startDay <= endDay) {
+                    isInDayRange = (dayOfWeek >= startDay && dayOfWeek <= endDay);
+                } else {
+                    // Range wraps around week (e.g., SAM to LUN)
+                    isInDayRange = (dayOfWeek >= startDay || dayOfWeek <= endDay);
+                }
+                
+                if (isInDayRange) {
+                    let restrictionStart = new Date(restrictionDate.getFullYear(), restrictionDate.getMonth(), restrictionDate.getDate(), startHour, startMinute);
+                    let restrictionEnd = new Date(restrictionDate.getFullYear(), restrictionDate.getMonth(), restrictionDate.getDate(), endHour, endMinute);
+
+                    if (restrictionStart < in24Hours && restrictionEnd > now) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    // New format with multiple specific days: "\P 08h-09h LUN. JEU. 1 AVRIL AU 1 DEC."
+    const regexMultipleDays = /(?:\\?P\s*)?(\d{1,2})h(\d{2})?-(\d{1,2})h(\d{2})?\s+((?:[A-Z]{3,9}\.?\s+)+)(\d{1,2})\s+([A-ZÈ]+)\s+AU\s+(\d{1,2})\s+([A-ZÈ]+)/i;
+    let matchMultipleDays = restriction.match(regexMultipleDays);
+
+    if (matchMultipleDays) {
+        const startHour = parseInt(matchMultipleDays[1], 10);
+        const startMinute = matchMultipleDays[2] ? parseInt(matchMultipleDays[2], 10) : 0;
+        const endHour = parseInt(matchMultipleDays[3], 10);
+        const endMinute = matchMultipleDays[4] ? parseInt(matchMultipleDays[4], 10) : 0;
+        const daysStr = matchMultipleDays[5].trim();
+        const startMonthDay = parseInt(matchMultipleDays[6], 10);
+        const startMonthStr = matchMultipleDays[7].toUpperCase();
+        const endMonthDay = parseInt(matchMultipleDays[8], 10);
+        const endMonthStr = matchMultipleDays[9].toUpperCase().replace('.','');
+
+        // Parse all days mentioned
+        const dayStrings = daysStr.split(/\s+/).filter(s => s.length > 0);
+        const restrictionDays = [];
+        
+        for (let dayStr of dayStrings) {
+            const cleanDay = dayStr.toUpperCase().replace('.', '');
+            if (cleanDay !== 'AU' && dayMap[cleanDay] !== undefined) {
+                restrictionDays.push(dayMap[cleanDay]);
+            }
+        }
+
+        const startMonth = monthMap[startMonthStr];
+        const endMonth = monthMap[endMonthStr];
+
+        if (restrictionDays.length === 0 || startMonth === undefined || endMonth === undefined) return false;
+
+        const currentYear = now.getFullYear();
+        const startDate = new Date(currentYear, startMonth, startMonthDay);
+        const endDate = new Date(currentYear, endMonth, endMonthDay);
+
+        if (now >= startDate && now <= endDate) {
+            // Check each of the restriction days in the next 7 days
+            for (let i = 0; i < 7; i++) {
+                let restrictionDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+                const dayOfWeek = restrictionDate.getDay();
+                
+                if (restrictionDays.includes(dayOfWeek)) {
+                    let restrictionStart = new Date(restrictionDate.getFullYear(), restrictionDate.getMonth(), restrictionDate.getDate(), startHour, startMinute);
+                    let restrictionEnd = new Date(restrictionDate.getFullYear(), restrictionDate.getMonth(), restrictionDate.getDate(), endHour, endMinute);
+
+                    if (restrictionStart < in24Hours && restrictionEnd > now) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    // New format with single day: "\P 13h30-15h30 MERCREDI 1 AVRIL AU 1 DEC."
+    const regex2 = /(?:\\?P\s*)?(\d{1,2})h(\d{2})?-(\d{1,2})h(\d{2})?\s+([A-Z.]{3,9})\s+(\d{1,2})\s+([A-ZÈ]+)\s+AU\s+(\d{1,2})\s+([A-ZÈ]+)/i;
     let match2 = restriction.match(regex2);
 
     if (match2) {
@@ -82,18 +198,10 @@ function isRestrictedInNext24Hours(restriction, now, in24Hours) {
     return false;
 }
 
-// Export for ES6 modules (browser)
+// Export for ES6 modules
 export {
     dayMap,
     monthMap,
     isRestrictedInNext24Hours
 };
 
-// Export for CommonJS (Node.js/Jest)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        dayMap,
-        monthMap,
-        isRestrictedInNext24Hours
-    };
-}

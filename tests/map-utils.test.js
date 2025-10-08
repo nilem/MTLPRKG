@@ -7,7 +7,7 @@ const mockJest = {
     fn: () => () => {}
 };
 
-const {
+import {
     getMarkerSizes,
     createVehicleDescription,
     isLowFuelVehicle,
@@ -22,7 +22,7 @@ const {
     validateMarkerProperties,
     createMockVehicle,
     createMockParkingSpot
-} = require('../map-utils.js');
+} from '../map-utils.js';
 
 describe('Map Utilities Tests', () => {
     

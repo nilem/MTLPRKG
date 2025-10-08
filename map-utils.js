@@ -188,18 +188,18 @@ function createMockParkingSpot(lat, lng, description) {
     return { lat, lng, description };
 }
 
-module.exports = {
+export {
     getMarkerSizes,
     createVehicleDescription,
     isLowFuelVehicle,
     createLowFuelIcon,
     createPurpleIcon,
     getParkingMarkerOptions,
-    getDayMapping: dayMap,
-    getMonthMapping: monthMap,
-    isRestrictedParking: isRestrictedSimplified,
+    dayMap as getDayMapping,
+    monthMap as getMonthMapping,
+    isRestrictedSimplified as isRestrictedParking,
     filterVehiclesByProximity,
-    distance: calculateDistance,
+    calculateDistance as distance,
     validateMarkerProperties,
     createMockVehicle,
     createMockParkingSpot

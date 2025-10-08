@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-const { formatTimeSinceLastUpdate } = require('../time-utils.js');
+import { formatTimeSinceLastUpdate } from '../time-utils.js';
 
 describe('Time Formatting Utilities Tests', () => {
     // Save original Date for all tests

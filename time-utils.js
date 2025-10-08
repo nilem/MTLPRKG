@@ -1,5 +1,9 @@
 /**
- * Formats the time elapsed since the last update
+ * Formats the time elapsed sinc}
+
+// Export for ES6 modules
+export { formatTimeSinceLastUpdate };
+ last update
  * @param {string} lastUpdateStr - ISO date string of the last update
  * @returns {string} - Formatted time string (e.g., "2h", "1j 3h", "15min")
  */

@@ -1,3 +1,11 @@
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const fs = require('fs');
 const path = require('path');
 
@@ -113,4 +121,4 @@ function quickUtf8Check() {
     return hasUtf8 && !hasCorruption;
 }
 
-module.exports = { quickUtf8Check };
+export { quickUtf8Check };

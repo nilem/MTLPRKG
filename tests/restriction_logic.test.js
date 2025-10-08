@@ -1,4 +1,4 @@
-const { isRestrictedInNext24Hours } = require('../restriction_logic.js');
+import { isRestrictedInNext24Hours } from '../restriction_logic.js';
 
 describe('isRestrictedInNext24Hours', () => {
     // Tuesday, July 1, 2025, 11:00 AM
@@ -56,6 +56,68 @@ describe('isRestrictedInNext24Hours', () => {
     test('should return true for a restriction starting tomorrow within 24 hours (original format)', () => {
         // Restriction starts on Wednesday at 10am.
         const restriction = 'MER 10H A JEU 17H';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(true);
+    });
+
+    // --- Tests for multiple specific days format ---
+
+    test('should return true for restriction with multiple specific days (current day)', () => {
+        // Restriction on Monday and Thursday. Current day is Tuesday.
+        // The restriction applies on Thursday which is in 2 days (within 24 hours from Wednesday 11am)
+        const restriction = '\\P 08h-09h LUN. JEU. 1 AVRIL AU 1 DEC.';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(false);
+    });
+
+    test('should return true for restriction with multiple specific days when one matches today', () => {
+        // Restriction on Monday and Tuesday at 10h-12h. Current day is Tuesday at 11h.
+        const restriction = '\\P 10h-12h LUN. MAR. 1 AVRIL AU 1 DEC.';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(true);
+    });
+
+    test('should return true for restriction with multiple specific days when one is tomorrow', () => {
+        // Restriction on Wednesday and Thursday. Current day is Tuesday.
+        // Wednesday is tomorrow, so it's within 24 hours.
+        const restriction = '\\P 10h-12h MER. JEU. 1 AVRIL AU 1 DEC.';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(true);
+    });
+
+    test('should return false for restriction with multiple specific days all outside 24h window', () => {
+        // Restriction on Thursday and Friday. Current day is Tuesday at 11am.
+        // Thursday is in 2 days, Friday is in 3 days - both outside 24h window
+        const restriction = '\\P 10h-11h JEU. VEN. 1 AVRIL AU 1 DEC.';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(false);
+    });
+
+    // --- Tests for day range in new format ---
+
+    test('should return true for day range restriction (LUN. AU VEN.) on active day', () => {
+        // Restriction Monday to Friday, 8h-18h. Current day is Tuesday at 11h.
+        const restriction = '\\P 08h-18h LUN. AU VEN.';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(true);
+    });
+
+    test('should return false for day range restriction outside the range', () => {
+        // Restriction Monday to Friday. Current day is Tuesday, but check for Saturday-Sunday range.
+        const restriction = '\\P 08h-18h SAM. AU DIM.';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(false);
+    });
+
+    test('should return true for day range restriction with month range', () => {
+        // Restriction Monday to Friday, 8h-18h, from April to December. Current date is July 1 (Tuesday).
+        const restriction = '\\P 08h-18h LUN. AU VEN. 1 AVRIL AU 1 DEC.';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(true);
+    });
+
+    test('should return false for day range restriction outside month range', () => {
+        // Restriction Monday to Friday, but from January to March. Current date is July.
+        const restriction = '\\P 08h-18h LUN. AU VEN. 1 JAN AU 31 MARS';
+        expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(false);
+    });
+
+    test('should return true for day range restriction starting tomorrow', () => {
+        // Restriction Wednesday to Friday, 9h-17h. Current day is Tuesday at 11h.
+        // Wednesday starts in less than 24 hours.
+        const restriction = '\\P 09h-17h MER. AU VEN.';
         expect(isRestrictedInNext24Hours(restriction, now, in24Hours)).toBe(true);
     });
 });
