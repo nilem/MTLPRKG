@@ -248,7 +248,49 @@
 <script type="module">
     import { getAvailableVehicules } from './fetchMapLayers.js';
     import { formatTimeSinceLastUpdate } from './time-utils.js';
-    import { isRestrictedInNext24Hours } from './restriction_logic.js';
+    import { isRestrictedInNext24Hours, dayMap } from './restriction_logic.js';
+    
+    // Fonction pour vérifier si une signalisation s'applique à un jour spécifique
+    function spotAppliesToDay(description, targetDay) {
+        // Vérifier les formats de restriction par jour
+        
+        // Format: "LUN. AU VEN." ou "LUNDI AU VENDREDI"
+        const regexDayRange = /(LUN|MAR|MER|JEU|VEN|SAM|DIM|LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)\.?\s+AU\s+(LUN|MAR|MER|JEU|VEN|SAM|DIM|LUNDI|MARDI|MERCREDI|JEUDI|VENDREDI|SAMEDI|DIMANCHE)/i;
+        const matchDayRange = description.match(regexDayRange);
+        
+        if (matchDayRange) {
+            const startDayStr = matchDayRange[1].toUpperCase().replace('.', '');
+            const endDayStr = matchDayRange[2].toUpperCase().replace('.', '');
+            const startDay = dayMap[startDayStr];
+            const endDay = dayMap[endDayStr];
+            
+            if (startDay !== undefined && endDay !== undefined) {
+                // Vérifier si targetDay est dans la plage
+                if (startDay <= endDay) {
+                    return targetDay >= startDay && targetDay <= endDay;
+                } else {
+                    // Plage qui entoure la semaine (ex: SAM à LUN)
+                    return targetDay >= startDay || targetDay <= endDay;
+                }
+            }
+        }
+        
+        // Format: jours multiples "LUN. JEU." ou spécifique "MERCREDI"
+        const daysInDescription = [];
+        for (const [dayName, dayNum] of Object.entries(dayMap)) {
+            // Créer un regex pour chaque jour avec des limites de mots
+            const dayRegex = new RegExp(`\\b${dayName}\\.?\\b`, 'i');
+            if (dayRegex.test(description)) {
+                daysInDescription.push(dayNum);
+            }
+        }
+        
+        if (daysInDescription.length > 0) {
+            return daysInDescription.includes(targetDay);
+        }
+        
+        return false;
+    }
 
 	var map = L.map('map').setView([45.5019, -73.5674], 13);
 
@@ -495,7 +537,7 @@
             shadowSize: [41, 41]
         });
 
-        const filter24h = document.getElementById('filter-checkbox').checked;
+        const signalisationFilter = document.getElementById('signalisation-filter').value;
         const proximityFilter = document.getElementById('proximity-filter-checkbox').checked;
 
         const DISTANCE_TO_PARKING = 100;
@@ -505,14 +547,39 @@
         
         const now = new Date();
         const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        
+        // Map des jours pour le filtrage
+        const dayFilterMap = {
+            'monday': 1,
+            'tuesday': 2,
+            'wednesday': 3,
+            'thursday': 4,
+            'friday': 5,
+            'saturday': 6,
+            'sunday': 0
+        };
 
         if (proximityFilter) {
-            const restrictedSpots = allParkingSpots.filter(spot => isRestrictedInNext24Hours(spot.description, now, in24Hours));
-            const restrictedSpotLatLngs = restrictedSpots.map(s => L.latLng(s.lat, s.lng));
+            // Filtrer les spots selon le filtre de signalisation actuel
+            let filteredSpots = [];
+            
+            if (signalisationFilter === 'all') {
+                // Tous les points SAUF les restrictions +24h
+                filteredSpots = allParkingSpots.filter(spot => !isRestrictedInNext24Hours(spot.description, now, in24Hours));
+            } else if (signalisationFilter === '24h') {
+                // Seulement les restrictions +24h
+                filteredSpots = allParkingSpots.filter(spot => isRestrictedInNext24Hours(spot.description, now, in24Hours));
+            } else {
+                // Filtrage par jour spécifique
+                const targetDay = dayFilterMap[signalisationFilter];
+                filteredSpots = allParkingSpots.filter(spot => spotAppliesToDay(spot.description, targetDay));
+            }
+            
+            const filteredSpotLatLngs = filteredSpots.map(s => L.latLng(s.lat, s.lng));
 
             vehiclesToDisplay = allVehicles.filter(v => {
                 const vehicleLatLng = L.latLng(v.location.position.lat, v.location.position.lon);
-                return restrictedSpotLatLngs.some(spotLatLng => vehicleLatLng.distanceTo(spotLatLng) < DISTANCE_TO_PARKING);
+                return filteredSpotLatLngs.some(spotLatLng => vehicleLatLng.distanceTo(spotLatLng) < DISTANCE_TO_PARKING);
             });
 
             const vehicleLatLngs = vehiclesToDisplay.map(v => L.latLng(v.location.position.lat, v.location.position.lon));
@@ -585,23 +652,40 @@
 
         spotsToDisplay.forEach(function(spot) {
             const isRestricted = isRestrictedInNext24Hours(spot.description, now, in24Hours);
-
-            if (filter24h && !isRestricted) {
-                return; // Skip if filter is on and spot is not restricted in next 24h
+            
+            // Déterminer si on doit afficher ce point selon le filtre
+            let shouldDisplay = false;
+            let markerColor = 'blue';
+            let markerFillColor = '#30f';
+            
+            if (signalisationFilter === 'all') {
+                // Afficher tous les points SAUF les restrictions +24h
+                shouldDisplay = !isRestricted;
+                markerColor = 'blue';
+                markerFillColor = '#30f';
+            } else if (signalisationFilter === '24h') {
+                // Afficher seulement les restrictions +24h en rouge
+                shouldDisplay = isRestricted;
+                markerColor = 'red';
+                markerFillColor = '#f03';
+            } else {
+                // Filtrage par jour spécifique - afficher en bleu
+                const targetDay = dayFilterMap[signalisationFilter];
+                shouldDisplay = spotAppliesToDay(spot.description, targetDay);
+                markerColor = 'blue';
+                markerFillColor = '#30f';
+            }
+            
+            if (!shouldDisplay) {
+                return;
             }
 
             var markerOptions = {
                 radius: 5,
-                fillOpacity: 0.5
+                fillOpacity: 0.5,
+                color: markerColor,
+                fillColor: markerFillColor
             };
-
-            if (isRestricted) {
-                markerOptions.color = 'red';
-                markerOptions.fillColor = '#f03';
-            } else {
-                markerOptions.color = 'blue';
-                markerOptions.fillColor = '#30f';
-            }
 
             var marker = L.circleMarker([spot.lat, spot.lng], markerOptions).bindPopup(spot.description);
             restrictedLayer.addLayer(marker);
@@ -729,11 +813,21 @@
                     </div>
                     
                     <div class="search-section">
-                        <h4>� Filtres</h4>
+                        <h4>🔧 Filtres</h4>
                         <div class="filter-section">
                             <div class="filter-item">
-                                <input type="checkbox" id="filter-checkbox" checked>
-                                <label for="filter-checkbox">Masquer signalisation +24h</label>
+                                <label for="signalisation-filter" style="width: 100%; margin-bottom: 5px;">Type de signalisation:</label>
+                                <select id="signalisation-filter" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
+                                    <option value="all">Toutes signalisations</option>
+                                    <option value="24h" selected>Signalisation interdiction +24h</option>
+                                    <option value="monday">Lundi</option>
+                                    <option value="tuesday">Mardi</option>
+                                    <option value="wednesday">Mercredi</option>
+                                    <option value="thursday">Jeudi</option>
+                                    <option value="friday">Vendredi</option>
+                                    <option value="saturday">Samedi</option>
+                                    <option value="sunday">Dimanche</option>
+                                </select>
                             </div>
                             <div class="filter-item">
                                 <input type="checkbox" id="proximity-filter-checkbox">
@@ -786,7 +880,7 @@
         });
         
         // Ajouter les event listeners pour les filtres
-        L.DomEvent.on(div.querySelector('#filter-checkbox'), 'change', redrawMap);
+        L.DomEvent.on(div.querySelector('#signalisation-filter'), 'change', redrawMap);
         L.DomEvent.on(div.querySelector('#proximity-filter-checkbox'), 'change', redrawMap);
         
         return div;
