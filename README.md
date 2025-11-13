@@ -77,6 +77,25 @@ MTLPRKG/
    npm run test:utils        # Tests d'utilitaires
    ```
 
+   ### Serveur HTTP local (Python)
+
+   Vous pouvez lancer un serveur HTTP simple depuis la racine du projet pour servir les fichiers statiques.
+
+   - **Python 3** (recommandé) :
+
+   ```bash
+   python3 -m http.server 8000
+   ```
+
+   - **Python 2** :
+
+   ```bash
+   python -m SimpleHTTPServer 8000
+   ```
+
+   Ouvrez ensuite `http://localhost:8000` dans votre navigateur. Changez le numéro de port si nécessaire.
+
+
 ### Tests et Qualité
 
 Le projet inclut une **suite complète de 50 tests** automatisés qui vérifient :
