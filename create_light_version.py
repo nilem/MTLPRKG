@@ -8,12 +8,15 @@ output_array = []
 
 # Filter features and modify properties
 if 'features' in data:
-    # Filter out features where DESCRIPTION_REP is "Enlevé"
-    # and features where DESCRIPTION_RPA contains "EN TOUT TEMPS"
+    # Filter out features where:
+    # - DESCRIPTION_REP is "Enlevé"
+    # - DESCRIPTION_RPA contains "EN TOUT TEMPS"
+    # - DESCRIPTION_RPA starts with "\P RESERVE" (reserved parking, not useful for us)
     filtered_features = [
         feature for feature in data['features']
         if (feature.get('properties', {}).get('DESCRIPTION_REP') != 'Enlevé' and
-            "EN TOUT TEMPS" not in feature.get('properties', {}).get('DESCRIPTION_RPA', ''))
+            "EN TOUT TEMPS" not in feature.get('properties', {}).get('DESCRIPTION_RPA', '') and
+            not feature.get('properties', {}).get('DESCRIPTION_RPA', '').startswith('\\P RESERVE'))
     ]
     
     for feature in filtered_features:
