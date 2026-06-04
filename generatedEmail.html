@@ -200,6 +200,109 @@
             font-size: 0.88rem;
         }
 
+        .action-row {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .secondary-btn {
+            background: #0f766e;
+        }
+
+        .neutral-btn {
+            background: #475569;
+        }
+
+        .photo-card {
+            margin-top: 14px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px;
+            background: #fbfdff;
+        }
+
+        .photo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #9bb5d7;
+            border-radius: 10px;
+            padding: 12px;
+            background: #f5f9ff;
+            color: #28415e;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .drop-zone.active {
+            border-color: #1d4ed8;
+            background: #eaf2ff;
+        }
+
+        .photo-summary {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .photo-list {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+            max-height: 260px;
+            overflow: auto;
+            padding-right: 2px;
+        }
+
+        .photo-row {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .photo-meta {
+            min-width: 0;
+        }
+
+        .photo-name {
+            margin: 0;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 560px;
+        }
+
+        .photo-stats {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .photo-row-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .small-btn {
+            padding: 6px 10px;
+            font-size: 0.82rem;
+        }
+
         @media (max-width: 900px) {
             body {
                 padding: 14px;
@@ -230,6 +333,7 @@
                 <button id="generate-btn" type="button">Generer</button>
             </div>
             <p class="hint">Le filtre d'heures reste accessible en permanence. Les changements de checkbox regenerent automatiquement le message.</p>
+            <p class="hint">Etapes rapides: 1) genere le texte 2) colle ou depose les photos 3) telecharge les JPG ou ouvre Gmail.</p>
 
             <div id="editor-root" class="layout">
                 <div class="pane input-pane">
@@ -240,6 +344,24 @@
                     <p class="pane-title">Message généré</p>
                     <textarea id="email-content" readonly></textarea>
                 </div>
+            </div>
+
+            <div class="action-row">
+                <button id="copy-message-btn" type="button" class="secondary-btn">Copier le message</button>
+                <button id="open-gmail-btn" type="button">Ouvrir brouillon Gmail</button>
+            </div>
+            <p class="hint">Gmail: le navigateur ne peut pas joindre automatiquement les fichiers. Ouvre le brouillon puis glisse les JPG compresses.</p>
+
+            <div class="photo-card">
+                <div class="photo-controls">
+                    <button id="pick-photos-btn" type="button" class="neutral-btn">Choisir des photos</button>
+                    <button id="download-photos-btn" type="button" class="secondary-btn">Telecharger les photos compressees</button>
+                    <button id="clear-photos-btn" type="button" class="neutral-btn">Vider les photos</button>
+                </div>
+                <input id="photo-input" type="file" accept="image/*" multiple hidden>
+                <div id="photo-drop-zone" class="drop-zone" tabindex="0">Colle, depose ou choisis des photos depuis ton iPhone ou ton Mac</div>
+                <p id="photo-summary" class="photo-summary">Aucune photo chargee.</p>
+                <div id="photo-list" class="photo-list"></div>
             </div>
 
             <div class="trip-card">
@@ -260,17 +382,45 @@
         const tripSummaryEl = document.getElementById('trip-summary');
         const tripListEl = document.getElementById('trip-list');
         const errorMessageEl = document.getElementById('error-message');
+        const copyMessageBtnEl = document.getElementById('copy-message-btn');
+        const openGmailBtnEl = document.getElementById('open-gmail-btn');
+        const photoInputEl = document.getElementById('photo-input');
+        const pickPhotosBtnEl = document.getElementById('pick-photos-btn');
+        const downloadPhotosBtnEl = document.getElementById('download-photos-btn');
+        const clearPhotosBtnEl = document.getElementById('clear-photos-btn');
+        const photoDropZoneEl = document.getElementById('photo-drop-zone');
+        const photoSummaryEl = document.getElementById('photo-summary');
+        const photoListEl = document.getElementById('photo-list');
 
         const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+        const MAX_IMAGE_BYTES = 500 * 1024;
+        const MIN_JPEG_QUALITY = 0.38;
 
         const state = {
             rawTrips: [],
             filteredTrips: [],
-            deselectedTripIds: new Set()
+            deselectedTripIds: new Set(),
+            photos: []
         };
 
         generateBtnEl.addEventListener('click', () => generateFromInput(true));
         hoursAgoEl.addEventListener('change', () => generateFromInput(false));
+        copyMessageBtnEl.addEventListener('click', handleCopyMessage);
+        openGmailBtnEl.addEventListener('click', openGmailDraft);
+        pickPhotosBtnEl.addEventListener('click', () => photoInputEl.click());
+        photoInputEl.addEventListener('change', (event) => {
+            void addPhotosFromFileList(event.target.files);
+            photoInputEl.value = '';
+        });
+        clearPhotosBtnEl.addEventListener('click', clearPhotos);
+        downloadPhotosBtnEl.addEventListener('click', downloadAllPhotos);
+        photoDropZoneEl.addEventListener('dragover', handleDragOver);
+        photoDropZoneEl.addEventListener('dragleave', handleDragLeave);
+        photoDropZoneEl.addEventListener('drop', handleDrop);
+        photoDropZoneEl.addEventListener('paste', handlePhotoPaste);
+        photoDropZoneEl.addEventListener('click', () => photoDropZoneEl.focus());
+
+        renderPhotoList();
 
         function generateFromInput(resetSelection) {
             clearError();
@@ -513,6 +663,314 @@
         function clearError() {
             errorMessageEl.textContent = '';
         }
+
+        async function handleCopyMessage() {
+            const message = emailContentEl.value.trim();
+            if (!message) {
+                setError('Aucun message a copier. Genere le message avant de copier.');
+                return;
+            }
+
+            clearError();
+            try {
+                await navigator.clipboard.writeText(message);
+            } catch (error) {
+                emailContentEl.focus();
+                emailContentEl.select();
+                document.execCommand('copy');
+            }
+        }
+
+        function openGmailDraft() {
+            const message = emailContentEl.value.trim();
+            if (!message) {
+                setError('Genere d abord le message avant d ouvrir Gmail.');
+                return;
+            }
+
+            clearError();
+            const parts = splitSubjectAndBody(message);
+            const url = new URL('https://mail.google.com/mail/');
+            url.searchParams.set('view', 'cm');
+            url.searchParams.set('fs', '1');
+            url.searchParams.set('to', 'bonjour@leoautopartage.com');
+            url.searchParams.set('su', parts.subject);
+            url.searchParams.set('body', parts.body);
+            window.open(url.toString(), '_blank', 'noopener');
+        }
+
+        function splitSubjectAndBody(message) {
+            const lines = message.split('\n');
+            const firstLine = lines[0] || '';
+            if (firstLine.toLowerCase().startsWith('sujet :')) {
+                return {
+                    subject: firstLine.replace(/^Sujet\s*:\s*/i, '').trim(),
+                    body: lines.slice(2).join('\n').trim()
+                };
+            }
+
+            return {
+                subject: 'Message stationnement',
+                body: message
+            };
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            photoDropZoneEl.classList.add('active');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            photoDropZoneEl.classList.remove('active');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            photoDropZoneEl.classList.remove('active');
+            void addPhotosFromFileList(event.dataTransfer.files);
+        }
+
+        function handlePhotoPaste(event) {
+            const files = [];
+            const items = event.clipboardData ? event.clipboardData.items : [];
+            for (let index = 0; index < items.length; index += 1) {
+                const item = items[index];
+                if (item.kind === 'file') {
+                    const file = item.getAsFile();
+                    if (file) {
+                        files.push(file);
+                    }
+                }
+            }
+
+            if (files.length > 0) {
+                event.preventDefault();
+                void addPhotosFromFileList(files);
+            }
+        }
+
+        async function addPhotosFromFileList(fileList) {
+            clearError();
+            const files = Array.from(fileList || []);
+            if (files.length === 0) {
+                return;
+            }
+
+            for (let index = 0; index < files.length; index += 1) {
+                const file = files[index];
+                if (!file.type.startsWith('image/')) {
+                    continue;
+                }
+
+                try {
+                    const compressed = await compressImageToTarget(file, MAX_IMAGE_BYTES);
+                    const safeName = createSafeJpgFileName(file.name, state.photos.length + 1);
+                    state.photos.push({
+                        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                        name: safeName,
+                        originalBytes: file.size,
+                        compressedBytes: compressed.blob.size,
+                        blob: compressed.blob,
+                        url: URL.createObjectURL(compressed.blob),
+                        reachedTarget: compressed.reachedTarget
+                    });
+                } catch (error) {
+                    setError(`Impossible de compresser ${file.name}. Essaie une autre image.`);
+                }
+
+                renderPhotoList();
+            }
+        }
+
+        async function compressImageToTarget(file, targetBytes) {
+            const image = await fileToImageElement(file);
+            let scale = 1;
+            let quality = 0.88;
+            let bestBlob = null;
+            let reachedTarget = false;
+
+            for (let step = 0; step < 14; step += 1) {
+                const width = Math.max(1, Math.floor(image.naturalWidth * scale));
+                const height = Math.max(1, Math.floor(image.naturalHeight * scale));
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const context = canvas.getContext('2d');
+                context.drawImage(image, 0, 0, width, height);
+
+                const blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+                if (!bestBlob || blob.size < bestBlob.size) {
+                    bestBlob = blob;
+                }
+
+                if (blob.size <= targetBytes) {
+                    reachedTarget = true;
+                    bestBlob = blob;
+                    break;
+                }
+
+                if (quality > MIN_JPEG_QUALITY) {
+                    quality = Math.max(MIN_JPEG_QUALITY, quality - 0.08);
+                } else {
+                    scale *= 0.86;
+                }
+            }
+
+            return {
+                blob: bestBlob,
+                reachedTarget
+            };
+        }
+
+        function fileToImageElement(file) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const image = new Image();
+                image.onload = () => {
+                    URL.revokeObjectURL(url);
+                    resolve(image);
+                };
+                image.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Image invalide'));
+                };
+                image.src = url;
+            });
+        }
+
+        function canvasToBlob(canvas, mimeType, quality) {
+            return new Promise((resolve, reject) => {
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        reject(new Error('Conversion blob echouee'));
+                        return;
+                    }
+                    resolve(blob);
+                }, mimeType, quality);
+            });
+        }
+
+        function createSafeJpgFileName(originalName, fallbackIndex) {
+            const base = (originalName || `photo-${fallbackIndex}`)
+                .replace(/\.[^.]+$/, '')
+                .replace(/[^a-zA-Z0-9-_]+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .toLowerCase();
+
+            const safeBase = base.length > 0 ? base : `photo-${fallbackIndex}`;
+            return `${safeBase}.jpg`;
+        }
+
+        function renderPhotoList() {
+            photoListEl.innerHTML = '';
+
+            if (state.photos.length === 0) {
+                photoSummaryEl.textContent = 'Aucune photo chargee.';
+                return;
+            }
+
+            let originalTotal = 0;
+            let compressedTotal = 0;
+
+            state.photos.forEach((photo) => {
+                originalTotal += photo.originalBytes;
+                compressedTotal += photo.compressedBytes;
+
+                const row = document.createElement('div');
+                row.className = 'photo-row';
+
+                const meta = document.createElement('div');
+                meta.className = 'photo-meta';
+
+                const name = document.createElement('p');
+                name.className = 'photo-name';
+                name.textContent = photo.name;
+
+                const stats = document.createElement('p');
+                stats.className = 'photo-stats';
+                const status = photo.reachedTarget ? 'OK <= 500 Ko' : 'Au-dessus de 500 Ko';
+                stats.textContent = `${formatBytes(photo.originalBytes)} -> ${formatBytes(photo.compressedBytes)} (${status})`;
+
+                const actions = document.createElement('div');
+                actions.className = 'photo-row-actions';
+
+                const downloadBtn = document.createElement('button');
+                downloadBtn.type = 'button';
+                downloadBtn.className = 'small-btn secondary-btn';
+                downloadBtn.textContent = 'Telecharger';
+                downloadBtn.addEventListener('click', () => downloadPhoto(photo));
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'small-btn neutral-btn';
+                removeBtn.textContent = 'Supprimer';
+                removeBtn.addEventListener('click', () => removePhoto(photo.id));
+
+                meta.appendChild(name);
+                meta.appendChild(stats);
+                actions.appendChild(downloadBtn);
+                actions.appendChild(removeBtn);
+
+                row.appendChild(meta);
+                row.appendChild(actions);
+                photoListEl.appendChild(row);
+            });
+
+            photoSummaryEl.textContent = `${state.photos.length} photos. Total: ${formatBytes(compressedTotal)} compresse (${formatBytes(originalTotal)} original).`;
+        }
+
+        function removePhoto(photoId) {
+            const photoIndex = state.photos.findIndex(photo => photo.id === photoId);
+            if (photoIndex === -1) {
+                return;
+            }
+
+            URL.revokeObjectURL(state.photos[photoIndex].url);
+            state.photos.splice(photoIndex, 1);
+            renderPhotoList();
+        }
+
+        function clearPhotos() {
+            state.photos.forEach(photo => URL.revokeObjectURL(photo.url));
+            state.photos = [];
+            renderPhotoList();
+        }
+
+        function downloadPhoto(photo) {
+            const link = document.createElement('a');
+            link.href = photo.url;
+            link.download = photo.name;
+            link.click();
+        }
+
+        function downloadAllPhotos() {
+            if (state.photos.length === 0) {
+                setError('Aucune photo a telecharger.');
+                return;
+            }
+
+            clearError();
+            state.photos.forEach((photo, index) => {
+                setTimeout(() => downloadPhoto(photo), index * 150);
+            });
+        }
+
+        function formatBytes(value) {
+            if (value < 1024) {
+                return `${value} octets`;
+            }
+
+            const kilo = value / 1024;
+            if (kilo < 1024) {
+                return `${kilo.toFixed(1)} Ko`;
+            }
+
+            return `${(kilo / 1024).toFixed(2)} Mo`;
+        }
+
     </script>
 </body>
 </html>
