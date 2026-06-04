@@ -129,11 +129,11 @@
         }
 
         .generated .input-pane {
-            flex: 0.78;
+            flex: 0.68;
         }
 
         .generated .output-pane {
-            flex: 1.22;
+            flex: 1.32;
         }
 
         .generated #json-input {
@@ -342,7 +342,7 @@
                 </div>
                 <div class="pane output-pane">
                     <p class="pane-title">Message généré</p>
-                    <textarea id="email-content" readonly></textarea>
+                    <textarea id="email-content"></textarea>
                 </div>
             </div>
 
@@ -393,7 +393,7 @@
         const photoListEl = document.getElementById('photo-list');
 
         const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-        const MAX_IMAGE_BYTES = 500 * 1024;
+        const MAX_IMAGE_BYTES = 250 * 1024;
         const MIN_JPEG_QUALITY = 0.38;
 
         const state = {
@@ -574,14 +574,15 @@
             const carCount = selectedTrips.length;
             const carWord = carCount === 1 ? 'voiture' : 'voitures';
             const movedWord = carCount === 1 ? 'déplacée' : 'déplacées';
+            const bonusAmount = carCount * 5;
             const subject = `Sujet : ${carCount} ${carWord} ${movedWord} dans Verdun`;
 
             if (state.filteredTrips.length === 0) {
-                return `${subject}\n\nBonjour,\n\nAucun trajet trouvé dans les dernières ${hoursAgo} heures.\n\nTotal des crédits utilisés : 0.00$\n\nCordialement`;
+                return `${subject}\n\nBonjour,\n\nAucun trajet trouvé dans les dernières ${hoursAgo} heures.\n\nTotal des crédits utilisés : 0.00$\nBonus : 0$\n\nCordialement`;
             }
 
             if (selectedTrips.length === 0) {
-                return `${subject}\n\nBonjour,\n\nJ'ai déplacé les 0 voitures suivantes.\n\nTotal des crédits utilisés : 0.00$\n\nCordialement`;
+                return `${subject}\n\nBonjour,\n\nJ'ai déplacé les 0 voitures suivantes.\n\nTotal des crédits utilisés : 0.00$\nBonus : 0$\n\nCordialement`;
             }
 
             const groupedTrips = groupTripsByDay(selectedTrips);
@@ -609,7 +610,8 @@
             });
 
             const totalSystemCredit = selectedTrips.reduce((sum, trip) => sum + trip.systemCredit, 0);
-            body += `Total des crédits utilisés : ${totalSystemCredit.toFixed(2)}$\n\n`;
+            body += `Total des crédits utilisés : ${totalSystemCredit.toFixed(2)}$\n`;
+            body += `Bonus : ${bonusAmount}$\n\n`;
             body += 'Cordialement';
 
             return `${subject}\n\n${body}`;
@@ -891,7 +893,7 @@
 
                 const stats = document.createElement('p');
                 stats.className = 'photo-stats';
-                const status = photo.reachedTarget ? 'OK <= 500 Ko' : 'Au-dessus de 500 Ko';
+                const status = photo.reachedTarget ? 'OK <= 250 Ko' : 'Au-dessus de 250 Ko';
                 stats.textContent = `${formatBytes(photo.originalBytes)} -> ${formatBytes(photo.compressedBytes)} (${status})`;
 
                 const actions = document.createElement('div');
