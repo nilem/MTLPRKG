@@ -557,8 +557,9 @@
 
             const vehicleHasMoved = hasVehicleMoved(currentState, newState);
             const timeSinceUpdate = vehicleHasMoved ? '< 1h' : formatTimeSinceLastUpdate(lastUpdateStr);
+            const lastUpdateReason = vehicule.lastUpdateReason ?? vehicule.status?.lastUpdateReason ?? vehicleUsages.vehicles?.[plate]?.lastUpdateReason ?? '';
             
-            const description = `${model} - ${plate}<br>⛽: ${energyLevel} km<br>🕐: ${timeSinceUpdate}<br><a href=\"https://maps.apple.com/?saddr=Current+Location&daddr=${lat},${lon}\" target=\"_blank\" style=\"display:inline-block;margin-top:6px;background:#fff;border-radius:8px;padding:2px 8px;font-size:13px;text-decoration:none;border:1px solid #aaa;box-shadow:0 1px 3px rgba(0,0,0,0.1);color:#007cad;\">🗺️ Itinéraire</a>`;
+            const description = `${model} - ${plate}<br>⛽: ${energyLevel} km<br>🕐: ${timeSinceUpdate}<br>R: ${lastUpdateReason}<br><a href=\"https://maps.apple.com/?saddr=Current+Location&daddr=${lat},${lon}\" target=\"_blank\" style=\"display:inline-block;margin-top:6px;background:#fff;border-radius:8px;padding:2px 8px;font-size:13px;text-decoration:none;border:1px solid #aaa;box-shadow:0 1px 3px rgba(0,0,0,0.1);color:#007cad;\">🗺️ Itinéraire</a>`;
             
             const fuelWarning = getFuelWarningLevel(energyLevel);
             const dataAge = isVehicleDataOld(vehicule);
