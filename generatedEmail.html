@@ -3,86 +3,515 @@
 <head>
     <meta charset="UTF-8">
     <title>Generated Email</title>
+    <style>
+        :root {
+            --bg: #f6f8fb;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #5b6470;
+            --line: #d8e1eb;
+            --primary: #1d4ed8;
+            --primary-soft: #dbeafe;
+            --error: #b91c1c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #f8fafc 0%, #edf3fb 100%);
+            color: var(--text);
+        }
+
+        .app {
+            max-width: 1150px;
+            margin: 0 auto;
+            display: grid;
+            gap: 14px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 1.6rem;
+        }
+
+        .subtitle {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            margin-bottom: 12px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        input[type="number"] {
+            width: 88px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 7px 8px;
+            font-size: 0.95rem;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 9px 14px;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.92;
+        }
+
+        .layout {
+            display: flex;
+            align-items: stretch;
+            gap: 14px;
+        }
+
+        .pane {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: flex 220ms ease;
+        }
+
+        .pane-title {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 0.94rem;
+            line-height: 1.45;
+            resize: vertical;
+            transition: min-height 240ms ease;
+        }
+
+        #json-input {
+            min-height: 300px;
+        }
+
+        #email-content {
+            min-height: 280px;
+            background: #fbfdff;
+        }
+
+        .generated .input-pane {
+            flex: 0.78;
+        }
+
+        .generated .output-pane {
+            flex: 1.22;
+        }
+
+        .generated #json-input {
+            min-height: 165px;
+        }
+
+        .generated #email-content {
+            min-height: 430px;
+        }
+
+        .trip-card {
+            margin-top: 14px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px;
+            background: #fafdff;
+        }
+
+        .trip-summary {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .trip-list {
+            margin-top: 10px;
+            max-height: 255px;
+            overflow: auto;
+            display: grid;
+            gap: 8px;
+            padding-right: 2px;
+        }
+
+        .trip-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: #ffffff;
+        }
+
+        .trip-row:hover {
+            background: var(--primary-soft);
+        }
+
+        .trip-row label {
+            font-weight: 500;
+            cursor: pointer;
+            line-height: 1.35;
+        }
+
+        .error {
+            margin-top: 8px;
+            color: var(--error);
+            font-weight: 600;
+            min-height: 1.25rem;
+        }
+
+        .hint {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 14px;
+            }
+
+            .layout {
+                flex-direction: column;
+            }
+
+            .generated #json-input,
+            .generated #email-content {
+                min-height: 250px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Coller le contenu JSON ici</h1>
-    <textarea id="json-input" rows="20" cols="100" style="width: 90%;"></textarea>
-    <br>
-    <div style="margin: 10px 0;">
-        <label for="hours-ago">Filtrer les trajets depuis (heures) : </label>
-        <input type="number" id="hours-ago" min="1" max="72" value="12" style="width: 60px;">
+    <div id="app" class="app">
+        <section class="card">
+            <h1>Generateur de message stationnement</h1>
+            <p class="subtitle">Colle la reponse JSON, ajuste la periode, puis coche ou decoche les trajets a inclure.</p>
+        </section>
+
+        <section class="card">
+            <div class="controls">
+                <label for="hours-ago">Filtrer les trajets depuis (heures):</label>
+                <input type="number" id="hours-ago" min="1" max="240" value="12">
+                <button id="generate-btn" type="button">Generer</button>
+            </div>
+            <p class="hint">Le filtre d'heures reste accessible en permanence. Les changements de checkbox regenerent automatiquement le message.</p>
+
+            <div id="editor-root" class="layout">
+                <div class="pane input-pane">
+                    <p class="pane-title">Entree JSON</p>
+                    <textarea id="json-input" placeholder="Colle ton JSON ici..."></textarea>
+                </div>
+                <div class="pane output-pane">
+                    <p class="pane-title">Message généré</p>
+                    <textarea id="email-content" readonly></textarea>
+                </div>
+            </div>
+
+            <div class="trip-card">
+                <p id="trip-summary" class="trip-summary">Aucun trajet affiché. Clique sur Générer.</p>
+                <div id="trip-list" class="trip-list"></div>
+            </div>
+
+            <div id="error-message" class="error"></div>
+        </section>
     </div>
-    <button id="generate-btn">Générer</button>
-    
-    <h2>Résultat formaté</h2>
-    <textarea id="email-content" rows="20" cols="100" style="width: 90%;"></textarea>
 
     <script>
-        document.getElementById('generate-btn').addEventListener('click', function() {
-            const jsonInput = document.getElementById('json-input').value;
-            const emailContent = document.getElementById('email-content');
-            const hoursAgo = parseInt(document.getElementById('hours-ago').value) || 12;
-            
+        const appEl = document.getElementById('app');
+        const jsonInputEl = document.getElementById('json-input');
+        const emailContentEl = document.getElementById('email-content');
+        const hoursAgoEl = document.getElementById('hours-ago');
+        const generateBtnEl = document.getElementById('generate-btn');
+        const tripSummaryEl = document.getElementById('trip-summary');
+        const tripListEl = document.getElementById('trip-list');
+        const errorMessageEl = document.getElementById('error-message');
+
+        const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
+        const state = {
+            rawTrips: [],
+            filteredTrips: [],
+            deselectedTripIds: new Set()
+        };
+
+        generateBtnEl.addEventListener('click', () => generateFromInput(true));
+        hoursAgoEl.addEventListener('change', () => generateFromInput(false));
+
+        function generateFromInput(resetSelection) {
+            clearError();
+
+            let parsedData;
             try {
-                const parsedData = JSON.parse(jsonInput);
-                const emailText = generateEmailFromData(parsedData, hoursAgo);
-                emailContent.value = emailText;
+                parsedData = JSON.parse(jsonInputEl.value || '[]');
             } catch (error) {
-                emailContent.value = 'Erreur de parsing JSON: ' + error.message;
-            }
-        });
-
-        function generateEmailFromData(data, hoursAgo = 12) {
-            if (!data || !Array.isArray(data)) {
-                return "Données invalides";
+                handleParsingError(error);
+                return;
             }
 
-            const timeFilterDate = new Date();
-            timeFilterDate.setHours(timeFilterDate.getHours() - hoursAgo);
+            if (!Array.isArray(parsedData)) {
+                handleParsingError(new Error('Le JSON doit être une liste (tableau).'));
+                return;
+            }
 
-            const tripsToday = data.filter(item => {
-                if (!item.trip || !item.trip.tripStartDate) {
-                    return false;
+            state.rawTrips = normalizeTrips(parsedData);
+            if (resetSelection) {
+                state.deselectedTripIds = new Set();
+            }
+            refreshStateFromFilters();
+            appEl.classList.add('generated');
+        }
+
+        function refreshStateFromFilters() {
+            const hoursAgo = getSafeHoursAgo();
+            state.filteredTrips = filterTripsByHours(state.rawTrips, hoursAgo);
+
+            const validTripIds = new Set(state.filteredTrips.map(trip => trip.tripId));
+            state.deselectedTripIds.forEach(tripId => {
+                if (!validTripIds.has(tripId)) {
+                    state.deselectedTripIds.delete(tripId);
                 }
-                const tripDate = new Date(item.trip.tripStartDate);
-                return tripDate >= timeFilterDate;
             });
 
-            tripsToday.sort((a, b) => new Date(a.trip.tripStartDate) - new Date(b.trip.tripStartDate));
+            renderTripList();
+            renderEmail();
+        }
 
-            if (tripsToday.length === 0) {
-                return "Aucun trajet pour aujourd'hui.";
+        function handleParsingError(error) {
+            state.rawTrips = [];
+            state.filteredTrips = [];
+            state.deselectedTripIds = new Set();
+            tripListEl.innerHTML = '';
+            tripSummaryEl.textContent = 'Aucun trajet affiché. Clique sur Générer.';
+            emailContentEl.value = '';
+            setError('Erreur de parsing JSON: ' + error.message);
+        }
+
+        function getSafeHoursAgo() {
+            const value = parseInt(hoursAgoEl.value, 10);
+            if (!Number.isFinite(value)) {
+                hoursAgoEl.value = '12';
+                return 12;
             }
 
-            const weekdays = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-            const tomorrowDate = new Date();
-            const todayDay = weekdays[tomorrowDate.getDay()];
-            tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-            const tomorrowDay = weekdays[tomorrowDate.getDay()];
+            const clamped = Math.min(240, Math.max(1, value));
+            hoursAgoEl.value = String(clamped);
+            return clamped;
+        }
 
-            const carCount = tripsToday.length;
-            const subject = `Sujet : ${carCount} voitures déplacées dans Verdun`;
+        function normalizeTrips(data) {
+            return data
+                .map((item, index) => {
+                    if (!item || !item.trip || !item.trip.tripStartDate) {
+                        return null;
+                    }
 
-            let body = `Bonjour,\n\n`;
-            body += `J'ai déplacé les ${carCount} voitures suivantes, ce ${todayDay} soir, tous situés dans des zones interdites de stationnement le ${tomorrowDay} entre 8h et 12h30\n`;
-            body += `(Filtré pour montrer les trajets depuis les dernières ${hoursAgo} heures)\n`;
+                    const tripDate = new Date(item.trip.tripStartDate);
+                    if (Number.isNaN(tripDate.getTime())) {
+                        return null;
+                    }
 
-            let totalSystemCredit = 0;
+                    const tripId = item.trip.tripId ? item.trip.tripId : `trip-${index}-${item.trip.tripStartDate}`;
+                    const plate = item.vehiculePlate ? item.vehiculePlate : 'N/A';
+                    const creditRaw = Number(item.withTaxAmountForTripSystemCredit);
+                    const systemCredit = Number.isFinite(creditRaw) ? creditRaw : 0;
 
-            tripsToday.forEach(trip => {
-                const plate = trip.vehiculePlate || 'N/A';
-                const creditCardCost = trip.grossRemainingToBePaid ? parseFloat(trip.grossRemainingToBePaid).toFixed(2) : '0.00';
-                const systemCreditCost = trip.withTaxAmountForTripSystemCredit ? parseFloat(trip.withTaxAmountForTripSystemCredit) : 0;
-                totalSystemCredit += systemCreditCost;
-                body += `* ${plate}. Coût du trajet : ${systemCreditCost.toFixed(2)}$ en crédit + ${creditCardCost}$ sur carte de crédit.\n`;
+                    return {
+                        tripId,
+                        plate,
+                        tripDate,
+                        systemCredit,
+                        dayKey: getLocalDayKey(tripDate)
+                    };
+                })
+                .filter(Boolean)
+                .sort((a, b) => a.tripDate - b.tripDate);
+        }
+
+        function filterTripsByHours(trips, hoursAgo) {
+            const cutoff = new Date();
+            cutoff.setHours(cutoff.getHours() - hoursAgo);
+            return trips.filter(trip => trip.tripDate >= cutoff);
+        }
+
+        function renderTripList() {
+            tripListEl.innerHTML = '';
+
+            if (state.filteredTrips.length === 0) {
+                tripSummaryEl.textContent = 'Aucun trajet dans cette période.';
+                return;
+            }
+
+            const selectedCount = getSelectedTrips().length;
+            tripSummaryEl.textContent = `${selectedCount}/${state.filteredTrips.length} trajets inclus.`;
+
+            state.filteredTrips.forEach(trip => {
+                const row = document.createElement('div');
+                row.className = 'trip-row';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `trip-${trip.tripId}`;
+                checkbox.checked = !state.deselectedTripIds.has(trip.tripId);
+
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.textContent = `${formatTripDateTime(trip.tripDate)} - ${trip.plate} - ${trip.systemCredit.toFixed(2)}$ en crédit`;
+
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        state.deselectedTripIds.delete(trip.tripId);
+                    } else {
+                        state.deselectedTripIds.add(trip.tripId);
+                    }
+
+                    const newSelectedCount = getSelectedTrips().length;
+                    tripSummaryEl.textContent = `${newSelectedCount}/${state.filteredTrips.length} trajets inclus.`;
+                    renderEmail();
+                });
+
+                row.appendChild(checkbox);
+                row.appendChild(label);
+                tripListEl.appendChild(row);
+            });
+        }
+
+        function getSelectedTrips() {
+            return state.filteredTrips.filter(trip => !state.deselectedTripIds.has(trip.tripId));
+        }
+
+        function renderEmail() {
+            const selectedTrips = getSelectedTrips();
+            const hoursAgo = getSafeHoursAgo();
+            emailContentEl.value = buildEmailText(selectedTrips, hoursAgo);
+        }
+
+        function buildEmailText(selectedTrips, hoursAgo) {
+            const carCount = selectedTrips.length;
+            const carWord = carCount === 1 ? 'voiture' : 'voitures';
+            const movedWord = carCount === 1 ? 'déplacée' : 'déplacées';
+            const subject = `Sujet : ${carCount} ${carWord} ${movedWord} dans Verdun`;
+
+            if (state.filteredTrips.length === 0) {
+                return `${subject}\n\nBonjour,\n\nAucun trajet trouvé dans les dernières ${hoursAgo} heures.\n\nTotal des crédits utilisés : 0.00$\n\nCordialement`;
+            }
+
+            if (selectedTrips.length === 0) {
+                return `${subject}\n\nBonjour,\n\nJ'ai déplacé les 0 voitures suivantes.\n\nTotal des crédits utilisés : 0.00$\n\nCordialement`;
+            }
+
+            const groupedTrips = groupTripsByDay(selectedTrips);
+            let body = 'Bonjour,\n\n';
+
+            groupedTrips.forEach((group, index) => {
+                const groupDate = dayKeyToDate(group.dayKey);
+                const dayName = WEEKDAYS[groupDate.getDay()];
+                const nextDay = new Date(groupDate);
+                nextDay.setDate(nextDay.getDate() + 1);
+                const nextDayName = WEEKDAYS[nextDay.getDay()];
+                const intro = index === 0 ? "J'ai déplacé" : "Ensuite, j'ai déplacé";
+
+                if (group.trips.length === 1) {
+                    body += `${intro} la voiture suivante, ${dayName} soir, située dans une zone interdite de stationnement le ${nextDayName} entre 8h et 12h30\n`;
+                } else {
+                    body += `${intro} les ${group.trips.length} voitures suivantes, ${dayName} soir, toutes situées dans des zones interdites de stationnement le ${nextDayName} entre 8h et 12h30\n`;
+                }
+
+                group.trips.forEach(trip => {
+                    body += `* ${trip.plate}. Coût du trajet : ${trip.systemCredit.toFixed(2)}$ en crédit.\n`;
+                });
+
+                body += '\n';
             });
 
-            body += `\nTotal des crédits utilisés : ${totalSystemCredit.toFixed(2)}$\n`;
-
-            body += `\nTous les véhicules ont été déplacés dans de zone à partir du [À COMPLÉTER PAR UTILISATEUR].\n\n`;
-            body += `Cordialement`;
+            const totalSystemCredit = selectedTrips.reduce((sum, trip) => sum + trip.systemCredit, 0);
+            body += `Total des crédits utilisés : ${totalSystemCredit.toFixed(2)}$\n\n`;
+            body += 'Cordialement';
 
             return `${subject}\n\n${body}`;
+        }
+
+        function groupTripsByDay(trips) {
+            const grouped = new Map();
+
+            trips.forEach(trip => {
+                if (!grouped.has(trip.dayKey)) {
+                    grouped.set(trip.dayKey, []);
+                }
+                grouped.get(trip.dayKey).push(trip);
+            });
+
+            return Array.from(grouped.entries())
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .map(([dayKey, dayTrips]) => ({
+                    dayKey,
+                    trips: dayTrips
+                }));
+        }
+
+        function getLocalDayKey(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function dayKeyToDate(dayKey) {
+            const [year, month, day] = dayKey.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function formatTripDateTime(date) {
+            const formatted = date.toLocaleString('fr-CA', {
+                weekday: 'short',
+                month: 'short',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            return formatted.replace(',', '');
+        }
+
+        function setError(message) {
+            errorMessageEl.textContent = message;
+        }
+
+        function clearError() {
+            errorMessageEl.textContent = '';
         }
     </script>
 </body>
