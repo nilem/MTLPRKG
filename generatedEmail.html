@@ -500,8 +500,7 @@
                     const creditRaw = Number(item.withTaxAmountForTripSystemCredit);
                     const totalWithTaxRaw = Number(item.totalWithTax);
                     const systemCredit = Number.isFinite(creditRaw) ? creditRaw : 0;
-                    const totalWithTax = Number.isFinite(totalWithTaxRaw) ? totalWithTaxRaw : systemCredit;
-                    const cardAmount = Math.max(0, totalWithTax - systemCredit);
+                    const cardAmount = Number.isFinite(totalWithTaxRaw) ? Math.max(0, totalWithTaxRaw) : 0;
 
                     return {
                         tripId,
