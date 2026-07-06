@@ -498,13 +498,17 @@
                     const tripId = item.trip.tripId ? item.trip.tripId : `trip-${index}-${item.trip.tripStartDate}`;
                     const plate = item.vehiculePlate ? item.vehiculePlate : 'N/A';
                     const creditRaw = Number(item.withTaxAmountForTripSystemCredit);
+                    const totalWithTaxRaw = Number(item.totalWithTax);
                     const systemCredit = Number.isFinite(creditRaw) ? creditRaw : 0;
+                    const totalWithTax = Number.isFinite(totalWithTaxRaw) ? totalWithTaxRaw : systemCredit;
+                    const cardAmount = Math.max(0, totalWithTax - systemCredit);
 
                     return {
                         tripId,
                         plate,
                         tripDate,
                         systemCredit,
+                        cardAmount,
                         dayKey: getLocalDayKey(tripDate)
                     };
                 })
@@ -578,11 +582,11 @@
             const subject = `Sujet : ${carCount} ${carWord} ${movedWord} dans Verdun`;
 
             if (state.filteredTrips.length === 0) {
-                return `${subject}\n\nBonjour,\n\nAucun trajet trouvé dans les dernières ${hoursAgo} heures.\n\nTotal des crédits utilisés : 0.00$\nBonus : 0$\n\nCordialement`;
+                return `${subject}\n\nBonjour,\n\nAucun trajet trouvé dans les dernières ${hoursAgo} heures.\n\nTotal des crédits utilisés : 0.00$\nBonus : 0$\nTotal facturé sur carte de crédit : 0.00$\n\nCordialement`;
             }
 
             if (selectedTrips.length === 0) {
-                return `${subject}\n\nBonjour,\n\nJ'ai déplacé les 0 voitures suivantes.\n\nTotal des crédits utilisés : 0.00$\nBonus : 0$\n\nCordialement`;
+                return `${subject}\n\nBonjour,\n\nJ'ai déplacé les 0 voitures suivantes.\n\nTotal des crédits utilisés : 0.00$\nBonus : 0$\nTotal facturé sur carte de crédit : 0.00$\n\nCordialement`;
             }
 
             const groupedTrips = groupTripsByDay(selectedTrips);
@@ -603,15 +607,17 @@
                 }
 
                 group.trips.forEach(trip => {
-                    body += `* ${trip.plate}. Coût du trajet : ${trip.systemCredit.toFixed(2)}$ en crédit.\n`;
+                    body += `* ${trip.plate}. Coût du trajet : ${trip.systemCredit.toFixed(2)}$ en crédit + ${trip.cardAmount.toFixed(2)}$.\n`;
                 });
 
                 body += '\n';
             });
 
             const totalSystemCredit = selectedTrips.reduce((sum, trip) => sum + trip.systemCredit, 0);
+            const totalCardAmount = selectedTrips.reduce((sum, trip) => sum + trip.cardAmount, 0);
             body += `Total des crédits utilisés : ${totalSystemCredit.toFixed(2)}$\n`;
             body += `Bonus : ${bonusAmount}$\n\n`;
+            body += `Total facturé sur carte de crédit : ${totalCardAmount.toFixed(2)}$\n\n`;
             body += 'Cordialement';
 
             return `${subject}\n\n${body}`;
